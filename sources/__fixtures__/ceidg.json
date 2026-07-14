@@ -1,0 +1,30 @@
+[
+  {
+    "firma": "GALERIA TESTOWA JAN KOWALSKI",
+    "nip": "9990000008",
+    "regon": "100000089",
+    "wojewodztwo": "MAZOWIECKIE",
+    "miejscowosc": "WARSZAWA",
+    "ulica": "UL. PRÓBNA",
+    "nrDomu": "33",
+    "kodPocztowy": "00-003",
+    "telefon": "48221111111",
+    "email": "galeria@example-fixture-ceidg.pl",
+    "www": "www.example-fixture-galeria.pl",
+    "dataRozpoczecia": "3/1/2015"
+  },
+  {
+    "firma": "PRACOWNIA ARTYSTYCZNA ANNA NOWAK",
+    "nip": "1110000009",
+    "regon": "100000095",
+    "wojewodztwo": "POMORSKIE",
+    "miejscowosc": "GDAŃSK",
+    "ulica": "UL. WZOROWA",
+    "nrDomu": "44",
+    "kodPocztowy": "80-001",
+    "telefon": "",
+    "email": "pracownia@example-fixture-ceidg.pl",
+    "www": "",
+    "dataRozpoczecia": "6/1/2018"
+  }
+]

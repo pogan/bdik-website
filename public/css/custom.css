@@ -1,0 +1,54 @@
+:root {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  background-color: #f7f7f8;
+}
+
+.navbar-brand i {
+  color: #6f42c1;
+}
+
+td.blurred-cell {
+  color: transparent;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+  user-select: none;
+  cursor: pointer;
+  position: relative;
+}
+
+td.blurred-cell:hover::after {
+  content: 'Zaloguj się, aby zobaczyć';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6f42c1;
+  text-shadow: none;
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+
+#results-table th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #6c757d;
+  white-space: nowrap;
+}
+
+#results-table td {
+  font-size: 0.9rem;
+}
+
+#results-table th .coverage-badge {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+}

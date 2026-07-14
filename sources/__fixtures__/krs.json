@@ -1,0 +1,32 @@
+[
+  {
+    "krsNumer": "0000100066",
+    "nazwa": "FUNDACJA TESTOWA NA RZECZ KULTURY",
+    "formaPrawna": "FUNDACJA",
+    "regon": "100000066",
+    "nip": "7770000006",
+    "wojewodztwo": "ŚLĄSKIE",
+    "miejscowosc": "KATOWICE",
+    "ulica": "UL. WZOROWA",
+    "nrDomu": "11",
+    "kodPocztowy": "40-001",
+    "telefon": "48322222222",
+    "email": "fundacja@example-fixture-krs.pl",
+    "www": "www.example-fixture-fundacja.pl"
+  },
+  {
+    "krsNumer": "0000100072",
+    "nazwa": "STOWARZYSZENIE PRZYJACIÓŁ TESTOWEGO TEATRU",
+    "formaPrawna": "STOWARZYSZENIE",
+    "regon": "100000072",
+    "nip": "8880000007",
+    "wojewodztwo": "DOLNOŚLĄSKIE",
+    "miejscowosc": "WROCŁAW",
+    "ulica": "UL. PRZYKŁADOWA",
+    "nrDomu": "22",
+    "kodPocztowy": "50-001",
+    "telefon": "",
+    "email": "stowarzyszenie@example-fixture-krs.pl",
+    "www": ""
+  }
+]

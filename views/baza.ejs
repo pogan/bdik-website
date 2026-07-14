@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <%- include('partials/head', { title: 'Baza Instytucji Kultury' }) %>
+</head>
+<body>
+  <%- include('partials/nav', { user: typeof user !== 'undefined' ? user : null }) %>
+
+  <main class="container pb-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-3 gap-2">
+      <div>
+        <h1 class="h4 mb-1">Instytucje kultury w Polsce</h1>
+        <p class="text-secondary small mb-0" id="result-count">Ładowanie danych…</p>
+      </div>
+      <div class="btn-group" id="export-buttons" hidden>
+        <a class="btn btn-outline-secondary btn-sm" href="#" data-format="csv"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
+        <a class="btn btn-outline-secondary btn-sm" href="#" data-format="xlsx"><i class="bi bi-file-earmark-excel me-1"></i>XLSX</a>
+        <a class="btn btn-outline-secondary btn-sm" href="#" data-format="pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-6 col-md-3">
+            <label class="form-label small text-secondary mb-1">Województwo</label>
+            <select class="form-select form-select-sm" id="f-voivodeship">
+              <option value="">Wszystkie</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small text-secondary mb-1">Powiat</label>
+            <select class="form-select form-select-sm" id="f-county">
+              <option value="">Wszystkie</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small text-secondary mb-1">Gmina</label>
+            <select class="form-select form-select-sm" id="f-commune">
+              <option value="">Wszystkie</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label small text-secondary mb-1">Miejscowość</label>
+            <select class="form-select form-select-sm" id="f-locality">
+              <option value="">Wszystkie</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label small text-secondary mb-1">Szukaj po nazwie</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" class="form-control" id="f-search" placeholder="np. biblioteka, dom kultury...">
+              <button class="btn btn-outline-secondary" type="button" id="f-reset">Wyczyść filtry</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive bg-white border rounded">
+      <table class="table table-hover align-middle mb-0" id="results-table">
+        <thead>
+          <tr id="table-head"></tr>
+        </thead>
+        <tbody id="table-body">
+          <tr><td class="text-center text-secondary py-4">Ładowanie…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <nav class="d-flex justify-content-between align-items-center mt-3">
+      <div class="text-secondary small" id="page-info"></div>
+      <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+    </nav>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/table.js"></script>
+</body>
+</html>
