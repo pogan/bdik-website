@@ -1,0 +1,32 @@
+{
+  "started_at": "2026-07-14T12:30:11.618Z",
+  "dry_run": false,
+  "changes": [],
+  "dead_websites": [],
+  "review": [],
+  "finished_at": "2026-07-14T12:31:59.837Z",
+  "stats": {
+    "www_checked": 0,
+    "www_ok": 0,
+    "www_fixed": 0,
+    "www_dead": 0,
+    "www_from_email_tried": 0,
+    "www_from_email_filled": 0,
+    "www_from_search_tried": 2,
+    "www_from_search_filled": 0,
+    "contact_pages_visited": 0,
+    "phone_tried": 0,
+    "phone_filled": 0,
+    "email_tried": 0,
+    "email_filled": 0,
+    "email_deobfuscated": 0,
+    "prompts_shown": 0,
+    "prompts_answered": 0,
+    "prompts_skipped": 0,
+    "review_queued": 0,
+    "search_queries": 4,
+    "search_blocked": 4,
+    "search_skipped_after_block": 0,
+    "search_skipped_recent": 0
+  }
+}

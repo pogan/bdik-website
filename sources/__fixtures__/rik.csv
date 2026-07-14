@@ -1,0 +1,4 @@
+Nazwa instytucji,REGON,NIP,Nr RIK,Województwo,Miejscowość,Ulica,Nr domu,Kod pocztowy,Telefon,E-mail,WWW
+Testowy Teatr Narodowy w Warszawie,100000014,5260000001,RIK/1/2001,MAZOWIECKIE,WARSZAWA,UL. TESTOWA,1,00-001,+48221234567,teatr@example-fixture.pl,www.example-fixture-teatr.pl
+Testowe Muzeum Regionalne w Krakowie,100000020,6760000002,RIK/2/1998,MAŁOPOLSKIE,KRAKÓW,UL. PRZYKŁADOWA,5,31-000,+48123456789,muzeum@example-fixture.pl,www.example-fixture-muzeum.pl
+Testowa Filharmonia im. Jana Kowalskiego,100000037,7770000003,RIK/3/2005,ŚLĄSKIE,KATOWICE,UL. WZOROWA,10,40-000,+48322345678,filharmonia@example-fixture.pl,

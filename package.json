@@ -1,0 +1,30 @@
+{
+  "name": "bdik-website",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Baza danych instytucji kultury - MVP",
+  "main": "app.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js",
+    "etl": "node etl/run.js",
+    "enrich": "node scripts/enrich_contacts.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "compression": "^1.7.5",
+    "dejavu-fonts-ttf": "^2.37.3",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "exceljs": "^4.4.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "pdfkit": "^0.15.2"
+  }
+}

@@ -1,0 +1,34 @@
+[
+  {
+    "Regon": "100000043",
+    "Nip": "5260000004",
+    "Nazwa": "TESTOWY DOM KULTURY W PRZYKŁADOWIE",
+    "Wojewodztwo": "MAZOWIECKIE",
+    "Powiat": "PRZYKŁADOWY",
+    "Gmina": "PRZYKŁADOWO",
+    "Miejscowosc": "PRZYKŁADOWO",
+    "Ulica": "UL. TESTOWA",
+    "NrNieruchomosci": "3",
+    "KodPocztowy": "02-002",
+    "NumerTelefonu": "48221111111",
+    "AdresEmail": "kontakt@example-fixture-gus.pl",
+    "GlownyPkd": "90.04.Z - DZIAŁALNOŚĆ OBIEKTÓW KULTURALNYCH",
+    "DataRozpoczeciaDzialalnosci": "1/15/1999"
+  },
+  {
+    "Regon": "100000050",
+    "Nip": "6760000005",
+    "Nazwa": "TESTOWA BIBLIOTEKA PUBLICZNA W WZORCOWIE",
+    "Wojewodztwo": "MAŁOPOLSKIE",
+    "Powiat": "WZORCOWY",
+    "Gmina": "WZORCOWO",
+    "Miejscowosc": "WZORCOWO",
+    "Ulica": "UL. PRÓBNA",
+    "NrNieruchomosci": "7",
+    "KodPocztowy": "32-002",
+    "NumerTelefonu": "48123333333",
+    "AdresEmail": "biblioteka@example-fixture-gus.pl",
+    "GlownyPkd": "91.01.A - DZIAŁALNOŚĆ BIBLIOTEK",
+    "DataRozpoczeciaDzialalnosci": "9/1/2003"
+  }
+]
