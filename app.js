@@ -8,8 +8,11 @@ const session = require('express-session');
 const db = require('./db');
 const SqliteSessionStore = require('./lib/sqliteSessionStore');
 const { passport } = require('./lib/auth');
+const { publishableKey, stripeConfigured } = require('./lib/stripe');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
+const paymentRoutes = require('./routes/payments');
+const webhookRoutes = require('./routes/webhooks');
 
 const app = express();
 
@@ -22,6 +25,11 @@ app.use(helmet({
 }));
 app.use(compression());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Webhook Stripe przed jakimkolwiek parserem JSON i przed sesją: weryfikacja
+// podpisu wymaga surowego body, a samo zdarzenie nie ma nic wspólnego z sesją
+// przeglądarki użytkownika.
+app.use('/webhooks', express.raw({ type: 'application/json' }), webhookRoutes);
 
 app.use(
   session({
@@ -44,17 +52,28 @@ app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 
 app.use('/api', apiRoutes);
 app.use('/', authRoutes);
+app.use('/', paymentRoutes);
 
 app.get('/', (req, res) => {
   res.redirect('/baza');
 });
 
 app.get('/baza', (req, res) => {
-  res.render('baza', { user: req.user || null });
+  res.render('baza', {
+    user: req.user || null,
+    stripePublishableKey: publishableKey,
+    stripeConfigured,
+  });
 });
 
 app.use((req, res) => {
   res.status(404).send('Nie znaleziono');
+});
+
+app.use((err, req, res, next) => {
+  console.error(err);
+  if (res.headersSent) return next(err);
+  return res.status(500).json({ error: 'Wystąpił błąd serwera.' });
 });
 
 const PORT = process.env.PORT || 3000;

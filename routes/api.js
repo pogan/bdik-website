@@ -1,15 +1,18 @@
 const express = require('express');
 const db = require('../db');
-const { queryInstitutions, iterateInstitutions, coverageCounts, facetValues } = require('../lib/query');
+const { queryInstitutions, coverageCounts, facetValues } = require('../lib/query');
 const { isAuthorized, fieldsForRequest } = require('../lib/projection');
-const { columnsFor, EXPORT_FIELDS_FULL, EXPORT_FIELDS_PDF } = require('../lib/fieldLabels');
-const { streamCsv, streamXlsx, streamPdf } = require('../lib/exportFormats');
+const { normalizeSelection, EXPORT_FORMATS } = require('../lib/orders');
+const { streamExport } = require('../lib/exportRun');
 
 const router = express.Router();
 
-function requireAuth(req, res, next) {
-  if (!isAuthorized(req)) {
-    return res.status(401).json({ error: 'Wymagane logowanie.' });
+// Eksport dla klientów jest płatny (routes/payments.js -> /pobierz/:token).
+// Ta ścieżka zostaje wyłącznie dla administratora - inaczej byłaby darmową
+// furtką omijającą płatność.
+function requireAdmin(req, res, next) {
+  if (!isAuthorized(req) || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Eksport jest płatny. Użyj przycisku pobierania na stronie bazy.' });
   }
   return next();
 }
@@ -63,39 +66,15 @@ router.get('/institutions/facets/:level', (req, res) => {
   res.json({ level, values });
 });
 
-const EXPORT_CONTENT_TYPES = {
-  csv: 'text/csv; charset=utf-8',
-  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  pdf: 'application/pdf',
-};
-
-router.get('/institutions/export', requireAuth, async (req, res) => {
+router.get('/institutions/export', requireAdmin, async (req, res) => {
   const format = String(req.query.format || 'csv').toLowerCase();
-  if (!EXPORT_CONTENT_TYPES[format]) {
+  if (!EXPORT_FORMATS.includes(format)) {
     return res.status(400).json({ error: 'Nieobsługiwany format. Dozwolone: csv, xlsx, pdf.' });
   }
 
-  const fieldKeys = format === 'pdf' ? EXPORT_FIELDS_PDF : EXPORT_FIELDS_FULL;
-  const columns = columnsFor(fieldKeys);
+  const selection = normalizeSelection({ ...parseFilters(req.query), q: req.query.q, sort: req.query.sort, order: req.query.order });
 
-  const rowIterator = iterateInstitutions(db, {
-    filters: parseFilters(req.query),
-    search: req.query.q || '',
-    sort: req.query.sort || 'name',
-    order: req.query.order || 'asc',
-    columns: fieldKeys,
-  });
-
-  res.setHeader('Content-Type', EXPORT_CONTENT_TYPES[format]);
-  res.setHeader('Content-Disposition', `attachment; filename="instytucje-kultury.${format}"`);
-
-  if (format === 'csv') {
-    return streamCsv(res, rowIterator, columns);
-  }
-  if (format === 'xlsx') {
-    return streamXlsx(res, rowIterator, columns);
-  }
-  return streamPdf(res, rowIterator, columns);
+  return streamExport(res, { format, selection, filename: 'instytucje-kultury' });
 });
 
 module.exports = router;
