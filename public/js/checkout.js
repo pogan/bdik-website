@@ -14,9 +14,19 @@
   let embedded = null;
   let modal = null;
   let currentToken = null;
+  // Zakres wyboru z chwili otwarcia modala - potrzebny w kroku "Przejdź do
+  // płatności", który zakłada zamówienie dopiero po zaznaczeniu zgód.
+  let pendingSelection = null;
+  let listenersBound = false;
 
   function el(id) {
     return document.getElementById(id);
+  }
+
+  // Przycisk "Przejdź do płatności" aktywny tylko, gdy oba oświadczenia zaznaczone.
+  function refreshConsentButton() {
+    const ok = el('consent-terms').checked && el('consent-withdrawal').checked;
+    el('consent-continue').disabled = !ok;
   }
 
   function showError(message) {
@@ -29,7 +39,12 @@
   function resetModal() {
     currentToken = null;
     el('checkout-error').classList.add('d-none');
-    el('checkout-pay').classList.remove('d-none');
+    // Start od ekranu zgód; formularz płatności pokazujemy dopiero po ich zaznaczeniu.
+    el('checkout-consents').classList.remove('d-none');
+    el('consent-terms').checked = false;
+    el('consent-withdrawal').checked = false;
+    el('consent-continue').disabled = true;
+    el('checkout-pay').classList.add('d-none');
     el('checkout-result').classList.add('d-none');
     el('result-pending').classList.add('d-none');
     el('result-paid').classList.add('d-none');
@@ -149,23 +164,49 @@
       node.addEventListener('hidden.bs.modal', destroyEmbedded);
       el('result-copy-btn').addEventListener('click', copyLink);
     }
+    if (!listenersBound) {
+      el('consent-terms').addEventListener('change', refreshConsentButton);
+      el('consent-withdrawal').addEventListener('change', refreshConsentButton);
+      el('consent-continue').addEventListener('click', proceedToPayment);
+      listenersBound = true;
+    }
     if (!stripe) stripe = window.Stripe(config.publishableKey);
 
     await destroyEmbedded();
     resetModal();
+    pendingSelection = selection;
     modal.show();
 
     try {
-      // Najpierw sama wycena - kwota pojawia się w modalu od razu, zanim
-      // Stripe zdąży wyrenderować formularz.
+      // Sama wycena - kwota pojawia się w modalu od razu. Zamówienia jeszcze NIE
+      // zakładamy: powstanie dopiero po zaznaczeniu zgód i kliknięciu "Przejdź do
+      // płatności" (proceedToPayment), więc samo obejrzenie ceny nie tworzy rekordu.
       const quote = await postJson('/api/checkout/quote', selection);
       if (quote.rowCount === 0) {
         showError('Wybrane filtry nie zwracają żadnych instytucji - nie ma czego eksportować.');
         return;
       }
       renderSummary(quote);
+    } catch (err) {
+      showError(err.message);
+    }
+  }
 
-      const session = await postJson('/api/checkout', selection);
+  // Krok po zaznaczeniu obu zgód: zakłada zamówienie (z flagami zgód, które
+  // serwer i tak waliduje) i montuje formularz Stripe.
+  async function proceedToPayment() {
+    if (!pendingSelection) return;
+    el('checkout-error').classList.add('d-none');
+    el('checkout-consents').classList.add('d-none');
+    el('checkout-pay').classList.remove('d-none');
+    el('checkout-loading').classList.remove('d-none');
+
+    try {
+      const session = await postJson('/api/checkout', {
+        ...pendingSelection,
+        termsAccepted: true,
+        withdrawalConsent: true,
+      });
       renderSummary(session);
       currentToken = session.token;
 

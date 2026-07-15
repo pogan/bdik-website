@@ -22,6 +22,7 @@ const INSTITUTION_COLUMNS = [
 ];
 
 const findByRegon = db.prepare('SELECT * FROM institutions WHERE regon = ?');
+const isOptedOut = db.prepare('SELECT 1 FROM institution_optouts WHERE regon = ?');
 const findByFallback = db.prepare(
   'SELECT * FROM institutions WHERE name_normalized = ? AND postal_code = ? AND building_no = ?'
 );
@@ -62,9 +63,16 @@ async function runSource(source) {
   let inserted = 0;
   let updated = 0;
   let skippedNoKey = 0;
+  let skippedOptout = 0;
 
   const transaction = db.transaction((raw) => {
     const canonical = source.toCanonical(raw);
+    // Instytucja zgłoszona do usunięcia (RODO opt-out) nie wraca do bazy przy
+    // kolejnym przebiegu ETL - pomijamy ją zanim zapiszemy cokolwiek (także raw).
+    if (canonical.regon && isOptedOut.get(canonical.regon)) {
+      skippedOptout += 1;
+      return;
+    }
     const rawResult = insertRaw.run({
       source_ref: canonical.source_ref || '',
       payload: JSON.stringify(raw),
@@ -109,7 +117,7 @@ async function runSource(source) {
     transaction(raw);
   }
 
-  return { source: source.name, inserted, updated, skippedNoKey };
+  return { source: source.name, inserted, updated, skippedNoKey, skippedOptout };
 }
 
 async function main() {

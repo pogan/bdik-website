@@ -93,6 +93,16 @@ CREATE TABLE IF NOT EXISTS institution_sources (
   UNIQUE(institution_id, source)
 );
 
+-- Opt-out instytucji (RODO art. 21): REGON zgłoszony do usunięcia. Trzymamy go
+-- w osobnej tabeli, a nie tylko kasujemy wiersz z institutions, bo kolejny
+-- przebieg ETL przywróciłby rekord ze źródła. Zapytania i eksport pomijają te
+-- REGON-y, a ETL nie wstawia ich z powrotem.
+CREATE TABLE IF NOT EXISTS institution_optouts (
+  regon TEXT PRIMARY KEY,
+  reason TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Allowlist użytkowników - istniejący aktywny wiersz = dostęp do pełnych danych.
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY,
@@ -123,6 +133,19 @@ CREATE TABLE IF NOT EXISTS orders (
   paid_at TEXT,
   download_count INTEGER NOT NULL DEFAULT 0,
   last_download_at TEXT,
+  -- Zgody prawne z chwili zakupu: wersja zaakceptowanego regulaminu oraz momenty
+  -- złożenia oświadczeń (akceptacja regulaminu i zgoda na natychmiastowe
+  -- dostarczenie treści cyfrowej z utratą prawa odstąpienia).
+  terms_version TEXT,
+  terms_accepted_at TEXT,
+  withdrawal_consent_at TEXT,
+  -- Znacznik wysłania e-maila potwierdzającego (trwały nośnik) - służy też jako
+  -- blokada przed podwójną wysyłką (webhook vs. synchronizacja ze Stripe).
+  confirmation_email_at TEXT,
+  -- Dane do faktury pozyskane w Stripe Checkout (NIP i adres nabywcy).
+  billing_name TEXT,
+  billing_tax_id TEXT,
+  billing_address TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
