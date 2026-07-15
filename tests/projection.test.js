@@ -22,9 +22,20 @@ test('fieldsForRequest: anonim dostaje wyłącznie pola publiczne', () => {
   assert.equal(fields.includes('regon'), false);
 });
 
-test('fieldsForRequest: zalogowany dostaje pełny zestaw', () => {
-  const fields = fieldsForRequest({ user: { is_active: 1 } });
-  assert.deepEqual(fields, FULL_FIELDS);
-  assert.ok(fields.includes('email'));
-  assert.ok(fields.includes('phone'));
+test('fieldsForRequest: zwykły zalogowany (nie-admin) nie widzi danych płatnych', () => {
+  const fields = fieldsForRequest({ user: { is_active: 1, role: 'user', email: 'ktos@gmail.com' } });
+  assert.deepEqual(fields, PUBLIC_FIELDS);
+  assert.equal(fields.includes('email'), false);
+  assert.equal(fields.includes('phone'), false);
+  assert.equal(fields.includes('regon'), false);
+});
+
+test('fieldsForRequest: administrator dostaje pełny zestaw', () => {
+  const byRole = fieldsForRequest({ user: { is_active: 1, role: 'admin' } });
+  assert.deepEqual(byRole, FULL_FIELDS);
+  assert.ok(byRole.includes('email'));
+  assert.ok(byRole.includes('phone'));
+
+  const byEmail = fieldsForRequest({ user: { is_active: 1, role: 'user', email: 'karol.konop@gmail.com' } });
+  assert.deepEqual(byEmail, FULL_FIELDS);
 });
