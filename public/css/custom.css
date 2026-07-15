@@ -1,41 +1,294 @@
+/* =========================================================================
+   BDIK — warstwa wizualna (design system)
+   Kolory: głęboki granat (ink) + akcent indygo. Estetyka nowoczesnego SaaS.
+   Uwaga: to wyłącznie warstwa prezentacji. Wszystkie id/klasy, których używa
+   JavaScript (f-*, table-head, blurred-cell, coverage-badge, export-buttons…),
+   pozostają nietknięte — restylujemy je tylko wizualnie.
+   ========================================================================= */
+
 :root {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --ink: #0f172a;          /* granatowy atrament: nagłówki, nawigacja */
+  --ink-soft: #334155;     /* tekst podstawowy */
+  --muted: #64748b;        /* tekst drugorzędny */
+  --muted-2: #94a3b8;      /* etykiety, placeholdery */
+  --line: #e2e8f0;         /* obramowania */
+  --line-strong: #cbd5e1;
+  --bg: #f6f8fb;           /* tło strony */
+  --surface: #ffffff;      /* karty, tabela */
+  --surface-2: #f8fafc;    /* subtelne wypełnienia */
+
+  --accent: #6d5ae6;       /* indygo — CTA, akcenty */
+  --accent-strong: #5a46d6;
+  --accent-ink: #4b39c4;
+  --accent-soft: #eef0fe;  /* delikatne tło akcentu */
+
+  --success: #16a34a;
+  --danger: #dc2626;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, .04), 0 1px 3px rgba(15, 23, 42, .06);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, .06), 0 2px 4px rgba(15, 23, 42, .04);
+  --shadow-lg: 0 24px 48px -12px rgba(15, 23, 42, .18);
+
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
+
+* { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 
 body {
-  background-color: #f7f7f8;
+  background-color: var(--bg);
+  color: var(--ink-soft);
+  font-feature-settings: 'cv05' 1, 'ss01' 1;
 }
 
-.navbar-brand i {
-  color: #6f42c1;
+::selection { background: var(--accent-soft); color: var(--accent-ink); }
+
+a { color: var(--accent-ink); text-decoration-color: color-mix(in srgb, var(--accent) 35%, transparent); text-underline-offset: 2px; }
+a:hover { color: var(--accent-strong); }
+
+/* Bootstrap color overrides (nienachalny retheming pod paletę) ------------- */
+.text-primary { color: var(--accent-ink) !important; }
+.text-body { color: var(--ink) !important; }
+.spinner-border.text-primary { color: var(--accent) !important; }
+.text-success { color: var(--success) !important; }
+.text-danger  { color: var(--danger)  !important; }
+
+.btn { border-radius: var(--radius-sm); font-weight: 600; letter-spacing: -.005em; transition: transform .06s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease, color .15s ease; }
+.btn:active { transform: translateY(.5px); }
+.btn-sm { border-radius: 8px; }
+.btn-lg { border-radius: 12px; }
+
+.btn-primary {
+  --bs-btn-bg: var(--accent);
+  --bs-btn-border-color: var(--accent);
+  --bs-btn-hover-bg: var(--accent-strong);
+  --bs-btn-hover-border-color: var(--accent-strong);
+  --bs-btn-active-bg: var(--accent-strong);
+  --bs-btn-active-border-color: var(--accent-strong);
+  --bs-btn-disabled-bg: var(--accent);
+  --bs-btn-disabled-border-color: var(--accent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .10), 0 4px 14px -4px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.btn-primary:hover { box-shadow: 0 2px 4px rgba(15, 23, 42, .12), 0 8px 22px -6px color-mix(in srgb, var(--accent) 60%, transparent); }
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--ink-soft);
+  --bs-btn-border-color: var(--line-strong);
+  --bs-btn-bg: var(--surface);
+  --bs-btn-hover-color: var(--ink);
+  --bs-btn-hover-bg: var(--surface-2);
+  --bs-btn-hover-border-color: var(--muted-2);
+  --bs-btn-active-color: var(--ink);
+  --bs-btn-active-bg: var(--surface-2);
+  --bs-btn-active-border-color: var(--muted-2);
+  background: var(--surface);
 }
 
-/* Płatne pola (telefon/e-mail/WWW/REGON) widzi wyłącznie administrator -
-   dla pozostałych są trwale zablurowane, bez podpowiedzi o logowaniu. */
-td.blurred-cell {
-  color: transparent;
-  text-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
-  user-select: none;
-  cursor: default;
+.form-control, .form-select {
+  border-color: var(--line-strong);
+  color: var(--ink);
+  border-radius: var(--radius-sm);
+}
+.form-control::placeholder { color: var(--muted-2); }
+.form-control:focus, .form-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.form-check-input:checked { background-color: var(--accent); border-color: var(--accent); }
+.form-check-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+
+.card { border-color: var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+
+/* Navbar ------------------------------------------------------------------ */
+.navbar {
+  background: color-mix(in srgb, var(--surface) 85%, transparent) !important;
+  backdrop-filter: saturate(140%) blur(10px);
+  border-bottom: 1px solid var(--line) !important;
+  position: sticky; top: 0; z-index: 1030;
+  margin-bottom: 0 !important;
+}
+.navbar-brand { color: var(--ink) !important; font-weight: 700; letter-spacing: -.02em; display: inline-flex; align-items: center; }
+.navbar-brand .brand-mark {
+  width: 30px; height: 30px; border-radius: 9px; margin-right: .6rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-ink) 100%);
+  color: #fff; box-shadow: 0 4px 12px -3px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.navbar-brand .brand-mark i { color: #fff; font-size: .95rem; }
+.navbar-brand i { color: var(--accent); }
+.navbar .text-secondary { color: var(--muted) !important; }
+
+/* Kotwice hero (#tool, #jak) - odsuwamy cel scrolla o wysokość sticky navbaru,
+   inaczej pasek zakrywa górę sekcji. */
+:target, #tool, #jak { scroll-margin-top: 84px; }
+
+/* Hero -------------------------------------------------------------------- */
+.hero {
+  position: relative;
+  background:
+    radial-gradient(1200px 400px at 85% -10%, rgba(109, 90, 230, .28), transparent 60%),
+    radial-gradient(900px 500px at 0% 0%, rgba(109, 90, 230, .16), transparent 55%),
+    linear-gradient(180deg, #0b1220 0%, var(--ink) 55%, #0d1526 100%);
+  color: #e8ecf6;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
+}
+.hero::after {
+  /* subtelna siatka „technologiczna” */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, .04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, .04) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(70% 60% at 50% 30%, #000 40%, transparent 100%);
+}
+.hero-inner { position: relative; z-index: 1; padding: clamp(3rem, 8vw, 5.5rem) 0 clamp(3.25rem, 8vw, 5rem); }
+
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: .5rem;
+  font-size: .78rem; font-weight: 600; letter-spacing: .02em;
+  color: #c9d0f5; background: rgba(109, 90, 230, .16);
+  border: 1px solid rgba(148, 163, 250, .28);
+  padding: .32rem .7rem; border-radius: 999px; margin-bottom: 1.25rem;
+}
+.hero-eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: #8b9bff; box-shadow: 0 0 0 3px rgba(139, 155, 255, .25); }
+
+.hero h1 {
+  font-size: clamp(2rem, 4.4vw, 3.25rem);
+  line-height: 1.05; letter-spacing: -.03em; font-weight: 700;
+  color: #fff; margin-bottom: 1rem; max-width: 16ch;
+}
+.hero h1 .accent { background: linear-gradient(90deg, #a99bff, #8b9bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero-lead { font-size: clamp(1.02rem, 1.6vw, 1.2rem); color: #b9c2dc; max-width: 56ch; line-height: 1.55; margin-bottom: 1.75rem; }
+
+.hero-cta { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.btn-hero {
+  background: #fff; color: var(--ink); border: none;
+  padding: .7rem 1.35rem; font-weight: 650;
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .5);
+}
+.btn-hero:hover { background: #f1f3fb; color: var(--ink); transform: translateY(-1px); }
+.btn-hero-ghost {
+  background: rgba(255, 255, 255, .06); color: #e8ecf6;
+  border: 1px solid rgba(255, 255, 255, .2); padding: .7rem 1.25rem; font-weight: 600;
+}
+.btn-hero-ghost:hover { background: rgba(255, 255, 255, .12); color: #fff; border-color: rgba(255, 255, 255, .35); }
+
+.hero-trust { display: flex; flex-wrap: wrap; gap: 1.1rem 1.75rem; margin-top: 2.25rem; }
+.hero-trust .item { display: inline-flex; align-items: center; gap: .5rem; color: #aab4d4; font-size: .9rem; }
+.hero-trust .item i { color: #8b9bff; font-size: 1rem; }
+
+.hero-stats { display: flex; gap: 2.25rem; margin-top: 2.25rem; flex-wrap: wrap; }
+.hero-stats .stat .num { font-size: 1.7rem; font-weight: 700; color: #fff; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.hero-stats .stat .lbl { font-size: .82rem; color: #9aa5c6; }
+
+/* Pasek „jak to działa” --------------------------------------------------- */
+.steps { border-bottom: 1px solid var(--line); background: var(--surface); }
+.steps .row { --bs-gutter-y: 0; }
+.step { display: flex; gap: .85rem; padding: 1.4rem 0; }
+.step .idx {
+  flex: none; width: 34px; height: 34px; border-radius: 10px;
+  background: var(--accent-soft); color: var(--accent-ink);
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .95rem;
+}
+.step .st-title { font-weight: 650; color: var(--ink); font-size: .96rem; margin-bottom: .1rem; }
+.step .st-desc { color: var(--muted); font-size: .86rem; line-height: 1.45; margin: 0; }
+@media (min-width: 768px) { .step + .step { border-left: 1px solid var(--line); padding-left: 1.75rem; } }
+
+/* Sekcja narzędzia -------------------------------------------------------- */
+.tool-header h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -.02em; color: var(--ink); margin-bottom: .15rem; }
+#result-count { color: var(--muted); }
+
+.export-hint { color: var(--muted); }
+.export-hint i { color: var(--accent); }
+
+/* Karta filtrów ----------------------------------------------------------- */
+.filters-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+.filters-card .form-label { color: var(--muted); font-weight: 600; letter-spacing: .01em; text-transform: none; }
+.filters-card .input-group-text { background: var(--surface-2); border-color: var(--line-strong); color: var(--muted-2); }
+
+/* Tabela ------------------------------------------------------------------ */
+/* overflow-x: auto - pozwala na poziome przewijanie szerokiej tabeli (kolumny
+   kontaktowe wychodzą poza kontener); border-radius nadal przycina rogi. */
+.table-shell { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow-x: auto; }
+
+#results-table { margin: 0; }
+#results-table thead th {
+  background: var(--surface-2);
+  font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--muted); font-weight: 700; white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+  padding: .7rem .85rem;
+}
+#results-table thead th[data-sort] { cursor: pointer; user-select: none; }
+#results-table thead th[data-sort]:hover { color: var(--accent-ink); }
+#results-table thead th .bi-lock-fill { color: var(--accent); opacity: .85; }
+
+#results-table tbody td {
+  font-size: .875rem; color: var(--ink-soft);
+  padding: .7rem .85rem; border-color: var(--line);
+  vertical-align: middle;
+}
+#results-table tbody tr:last-child td { border-bottom: 0; }
+#results-table.table-hover tbody tr:hover td { background-color: color-mix(in srgb, var(--accent-soft) 55%, transparent); }
+#results-table tbody td:first-child { font-weight: 600; color: var(--ink); }
+
+/* Płatne pola — elegancki „locked premium” zamiast zepsutego bluru.
+   JS renderuje <td class="blurred-cell">placeholder</td>; ukrywamy treść
+   miękkim blurem i sygnalizujemy, że to zawartość odblokowywana eksportem. */
+#results-table tbody td.blurred-cell {
+  color: transparent !important;
+  text-shadow: 0 0 9px rgba(15, 23, 42, .34);
+  user-select: none; -webkit-user-select: none; cursor: default;
+  position: relative;
+}
+#results-table tbody td.blurred-cell::before {
+  content: ""; position: absolute; inset: .3rem .45rem; border-radius: 6px;
+  background: repeating-linear-gradient(-45deg,
+    color-mix(in srgb, var(--accent) 15%, transparent) 0 6px,
+    transparent 6px 12px);
+  pointer-events: none;
+}
+#results-table.table-hover tbody tr:hover td.blurred-cell::before {
+  background: repeating-linear-gradient(-45deg,
+    color-mix(in srgb, var(--accent) 26%, transparent) 0 6px,
+    transparent 6px 12px);
 }
 
-#results-table th {
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  color: #6c757d;
-  white-space: nowrap;
-}
-
-#results-table td {
-  font-size: 0.9rem;
-}
-
+/* Odznaki pokrycia (telefon/e-mail/WWW) */
 #results-table th .coverage-badge {
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 0.7rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  cursor: help;
+  text-transform: none; letter-spacing: 0; font-size: .68rem; font-weight: 700;
+  font-variant-numeric: tabular-nums; cursor: help; border-radius: 999px; padding: .18em .5em;
 }
+
+/* Paginacja --------------------------------------------------------------- */
+.pagination { --bs-pagination-color: var(--ink-soft); --bs-pagination-border-color: var(--line); --bs-pagination-hover-color: var(--accent-ink); --bs-pagination-hover-bg: var(--accent-soft); --bs-pagination-hover-border-color: var(--line-strong); --bs-pagination-focus-box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); --bs-pagination-active-bg: var(--accent); --bs-pagination-active-border-color: var(--accent); }
+.page-link { border-radius: 8px !important; margin: 0 2px; font-weight: 600; }
+#page-info { color: var(--muted); }
+
+/* Modal płatności --------------------------------------------------------- */
+.modal-content { border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
+.modal-header { border-bottom: 1px solid var(--line); padding: 1.15rem 1.35rem; }
+.modal-title { font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
+.modal-body { padding: 1.35rem; }
+.checkout-summary { background: linear-gradient(180deg, var(--surface-2), var(--surface)); border: 1px solid var(--line) !important; border-radius: var(--radius) !important; }
+.checkout-summary .grand { color: var(--ink); font-weight: 700; }
+.alert-info { --bs-alert-bg: var(--accent-soft); --bs-alert-border-color: color-mix(in srgb, var(--accent) 22%, transparent); --bs-alert-color: var(--accent-ink); border-radius: var(--radius-sm); }
+.alert-danger { border-radius: var(--radius-sm); }
+
+/* Stopka ------------------------------------------------------------------ */
+footer { background: var(--surface) !important; border-top: 1px solid var(--line) !important; }
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--accent-ink); }
+footer .fw-semibold.text-body { color: var(--ink) !important; }
+
+/* Cookie banner ----------------------------------------------------------- */
+#cookie-banner { background: var(--ink) !important; border-top: 1px solid rgba(255, 255, 255, .08); }
+#cookie-banner a.link-light { color: #c9d0f5 !important; }
+
+/* Drobne narzędziówki ----------------------------------------------------- */
+.text-secondary { color: var(--muted) !important; }
+code { color: var(--accent-ink); background: var(--accent-soft); padding: .1em .4em; border-radius: 6px; font-size: .85em; }
+hr { border-color: var(--line); opacity: 1; }

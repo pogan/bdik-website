@@ -53,14 +53,47 @@
     el('checkout-container').innerHTML = '';
     el('checkout-summary-title').textContent = 'Przygotowywanie…';
     el('checkout-summary-filters').textContent = '';
+    el('checkout-coverage').classList.add('d-none');
     ['sum-rows', 'sum-perrow', 'sum-net', 'sum-vat', 'sum-gross'].forEach((id) => {
       el(id).textContent = '—';
     });
   }
 
+  // Pokrycie danych kontaktowych w wybranym zakresie: dla każdego kanału pokazujemy
+  // "wypełnione/wszystkie" i procent, z kolorem jak przy badge'ach w tabeli.
+  const COVERAGE_FIELDS = [
+    { key: 'phone', label: 'Telefon' },
+    { key: 'email', label: 'E-mail' },
+    { key: 'website', label: 'WWW' },
+  ];
+
+  function renderCoverage(coverage) {
+    const box = el('checkout-coverage');
+    if (!coverage || !coverage.total || !coverage.fields) {
+      box.classList.add('d-none');
+      return;
+    }
+    let any = false;
+    COVERAGE_FIELDS.forEach((f) => {
+      const span = el(`cov-${f.key}`);
+      const stats = coverage.fields[f.key];
+      if (!stats) {
+        span.classList.add('d-none');
+        return;
+      }
+      const pct = Math.round((stats.filled / coverage.total) * 100);
+      const tone = pct >= 70 ? 'success' : pct >= 30 ? 'warning' : 'danger';
+      span.className = `badge rounded-pill bg-${tone}-subtle text-${tone}-emphasis`;
+      span.textContent = `${f.label}: ${stats.filled}/${coverage.total} (${pct}%)`;
+      any = true;
+    });
+    box.classList.toggle('d-none', !any);
+  }
+
   function renderSummary(data) {
     el('checkout-summary-title').textContent = `${data.formatLabel} · ${data.rowCount} instytucji`;
     el('checkout-summary-filters').textContent = data.description;
+    renderCoverage(data.coverage);
     const p = data.pricing || {};
     el('sum-rows').textContent = data.rowCount;
     el('sum-perrow').textContent = p.perRowLabel || '—';

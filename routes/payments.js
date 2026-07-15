@@ -2,7 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const db = require('../db');
 const orders = require('../lib/orders');
-const { countInstitutions } = require('../lib/query');
+const { countInstitutions, coverageCounts } = require('../lib/query');
 const {
   priceBreakdown,
   breakdownFromNet,
@@ -154,6 +154,10 @@ router.post('/api/checkout/quote', express.json(), (req, res) => {
     amountLabel: formatAmount(bd.gross),
     pricing: pricingPayload(bd.net, rowCount),
     description: describeFilters({ ...selection.filters, q: selection.q }),
+    // Pokrycie danych kontaktowych (telefon/e-mail/WWW) dla wycenianego zakresu -
+    // te same liczby co badge w nagłówku tabeli. Kupujący widzi w podsumowaniu,
+    // ile rekordów ma faktycznie dane kontaktowe, zanim zapłaci.
+    coverage: coverageCounts(db, { filters: selection.filters, search: selection.q }),
   });
 });
 
@@ -239,6 +243,9 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireConsents, r
     return res.json({
       clientSecret: session.client_secret,
       ...orderPayload(orders.findByToken(order.token)),
+      // Powtarzamy pokrycie także tutaj, żeby po przejściu do płatności
+      // (renderSummary z tej odpowiedzi) podsumowanie nie utraciło tych liczb.
+      coverage: coverageCounts(db, { filters: selection.filters, search: selection.q }),
     });
   } catch (err) {
     return next(err);
