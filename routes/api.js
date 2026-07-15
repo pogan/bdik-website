@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { queryInstitutions, coverageCounts, facetValues } = require('../lib/query');
-const { isAuthorized, isAdmin, fieldsForRequest } = require('../lib/projection');
+const { isAdmin, fieldsForRequest } = require('../lib/projection');
 const { normalizeSelection, EXPORT_FORMATS } = require('../lib/orders');
 const { streamExport } = require('../lib/exportRun');
 
@@ -30,7 +30,9 @@ function parseFilters(query) {
 
 router.get('/institutions', (req, res) => {
   const columns = fieldsForRequest(req);
-  const authorized = isAuthorized(req);
+  // Pełne dane (kontakt, REGON) widzi tylko administrator - dla wszystkich
+  // innych (także zwykłych zalogowanych) komórki pozostają zablurowane.
+  const authorized = isAdmin(req);
   const filters = parseFilters(req.query);
   const search = req.query.q || '';
 

@@ -10,26 +10,13 @@ body {
   color: #6f42c1;
 }
 
+/* Płatne pola (telefon/e-mail/WWW/REGON) widzi wyłącznie administrator -
+   dla pozostałych są trwale zablurowane, bez podpowiedzi o logowaniu. */
 td.blurred-cell {
   color: transparent;
   text-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
   user-select: none;
-  cursor: pointer;
-  position: relative;
-}
-
-td.blurred-cell:hover::after {
-  content: 'Zaloguj się, aby zobaczyć';
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6f42c1;
-  text-shadow: none;
-  font-size: 0.75rem;
-  background: rgba(255, 255, 255, 0.9);
-  white-space: nowrap;
+  cursor: default;
 }
 
 #results-table th {
