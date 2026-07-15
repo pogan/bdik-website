@@ -1,0 +1,162 @@
+<%
+  // Treść regulaminu w wersji 2026-07-15. Dane sprzedawcy z res.locals.seller.
+  // UWAGA prawna: to rzetelny szkic przygotowany programistycznie, nie porada
+  // prawna - przed startem produkcyjnym warto zlecić przegląd prawnikowi.
+%>
+<h1 class="h3 mb-1">Regulamin serwisu Baza Instytucji Kultury</h1>
+<p class="text-secondary">Wersja z dnia <%= documentVersion %> (data obowiązywania).</p>
+
+<h2 class="h5 mt-4">§ 1. Postanowienia ogólne i dane sprzedawcy</h2>
+<ol>
+  <li>Regulamin określa zasady korzystania z serwisu internetowego udostępniającego
+    bazę polskich instytucji kultury (dalej „Serwis”) oraz zasady sprzedaży płatnych
+    eksportów danych z tej bazy.</li>
+  <li>Sprzedawcą i administratorem Serwisu jest <strong><%= seller.name %></strong><% if (seller.address) { %>,
+    <%= seller.address %><% } %><% if (seller.nip) { %>, NIP <%= seller.nip %><% } %><% if (seller.regon) { %>,
+    REGON <%= seller.regon %><% } %> (dalej „Sprzedawca”).</li>
+  <li>Kontakt ze Sprzedawcą: <a href="mailto:<%= seller.email %>"><%= seller.email %></a>.</li>
+  <li>Konsumentem jest osoba fizyczna dokonująca zakupu w celu niezwiązanym
+    bezpośrednio z jej działalnością gospodarczą lub zawodową. Postanowienia dotyczące
+    konsumenta stosuje się także do osoby fizycznej zawierającej umowę bezpośrednio
+    związaną z jej działalnością gospodarczą, gdy z treści umowy wynika, że nie ma ona
+    dla tej osoby charakteru zawodowego (przedsiębiorca na prawach konsumenta).</li>
+</ol>
+
+<h2 class="h5 mt-4">§ 2. Przedmiot i zakres usługi</h2>
+<ol>
+  <li>Serwis udostępnia bezpłatnie ograniczony podgląd bazy (nazwa instytucji,
+    województwo, miejscowość) oraz umożliwia jej filtrowanie.</li>
+  <li>Przedmiotem sprzedaży jest <strong>treść cyfrowa</strong> — plik z eksportem danych
+    wybranego przez Kupującego zakresu instytucji, w formacie CSV, XLSX albo PDF. Zakres
+    kolumn zależy od formatu i obejmuje m.in. dane teleadresowe oraz identyfikatory
+    rejestrowe (REGON, NIP).</li>
+  <li>Liczba rekordów objętych zamówieniem oraz cena są prezentowane Kupującemu przed
+    zawarciem umowy, na podstawie wybranych filtrów.</li>
+  <li>Do korzystania z Serwisu wystarczy urządzenie z aktualną przeglądarką i dostępem
+    do internetu; plik eksportu otwiera się w standardowym oprogramowaniu biurowym
+    (arkusz kalkulacyjny, czytnik PDF).</li>
+</ol>
+
+<h2 class="h5 mt-4">§ 3. Pochodzenie danych i brak gwarancji ich zgodności</h2>
+<ol>
+  <li>Dane w bazie pochodzą z <strong>publicznie dostępnych rejestrów</strong> (w
+    szczególności Krajowego Rejestru Sądowego) oraz z <strong>ręcznych uzupełnień</strong>
+    dokonanych przez Sprzedawcę.</li>
+  <li>Sprzedawca dokłada starań, by dane były rzetelne, ale <strong>nie gwarantuje ich
+    kompletności, aktualności ani zgodności ze stanem faktycznym</strong>. Część rekordów
+    może nie zawierać numeru telefonu, adresu e-mail lub adresu strony WWW — braki te są
+    widoczne dla Kupującego już na etapie filtrowania i podglądu bazy, przed zakupem.</li>
+  <li>Przedmiotem umowy jest dostarczenie pliku o zakresie i liczbie rekordów zgodnych z
+    prezentacją przed zakupem. Nieaktualność lub brak pojedynczych danych kontaktowych,
+    wynikające ze źródeł opisanych w ust. 1, <strong>nie stanowią niezgodności treści
+    cyfrowej z umową</strong> — mieszczą się w opisanym powyżej charakterze usługi.</li>
+  <li>Kupujący przyjmuje do wiadomości, że to on — jako niezależny administrator danych
+    — odpowiada za zgodne z prawem wykorzystanie danych kontaktowych zawartych w eksporcie,
+    w tym za przestrzeganie przepisów o ochronie danych osobowych oraz zakazu przesyłania
+    niezamówionej informacji handlowej.</li>
+</ol>
+
+<h2 class="h5 mt-4">§ 4. Zamówienie, ceny i płatność</h2>
+<ol>
+  <li>Kupujący wybiera format i zakres danych, akceptuje niniejszy Regulamin oraz składa
+    wymagane oświadczenia (§ 6), a następnie dokonuje płatności.</li>
+  <li>Ceny prezentowane w Serwisie podawane są w złotych (PLN) z rozbiciem na wartość
+    netto, podatek VAT (23%) i kwotę brutto do zapłaty. Kwota brutto jest kwotą, którą
+    faktycznie płaci Kupujący.</li>
+  <li>Cena zależy wyłącznie od liczby rekordów w wybranym zakresie i jest obliczana przez
+    Serwis; wysokość opłaty prezentowana jest przed płatnością.</li>
+  <li>Płatności obsługuje operator Stripe (m.in. BLIK, Przelewy24, karta płatnicza).
+    Umowę uważa się za zawartą z chwilą skutecznego dokonania płatności.</li>
+  <li>Na żądanie Kupującego Sprzedawca wystawia fakturę. Kupujący będący podatnikiem może
+    podać numer NIP w trakcie płatności; w pozostałych przypadkach fakturę można uzyskać,
+    zgłaszając żądanie na adres <a href="mailto:<%= seller.email %>"><%= seller.email %></a>
+    wraz z numerem zamówienia i danymi nabywcy.</li>
+</ol>
+
+<h2 class="h5 mt-4">§ 5. Dostarczenie treści cyfrowej</h2>
+<ol>
+  <li>Treść cyfrowa dostarczana jest <strong>niezwłocznie po zaksięgowaniu płatności</strong>,
+    poprzez udostępnienie linku do pobrania pliku na stronie potwierdzenia oraz w wiadomości
+    e-mail.</li>
+  <li>Link do pobrania jest ważny przez 24 godziny od opłacenia i umożliwia pobranie pliku
+    do 10 razy. Kupujący powinien zachować pobrany plik; ponowne udostępnienie po upływie
+    ważności linku możliwe jest na zasadach ustalonych ze Sprzedawcą.</li>
+</ol>
+
+<h2 class="h5 mt-4">§ 6. Prawo odstąpienia od umowy i jego utrata</h2>
+<ol>
+  <li>Konsumentowi (oraz przedsiębiorcy na prawach konsumenta) przysługuje co do zasady
+    prawo odstąpienia od umowy zawartej na odległość w terminie 14 dni bez podania przyczyny.</li>
+  <li>Prawo odstąpienia <strong>nie przysługuje</strong> w odniesieniu do umów o dostarczanie
+    treści cyfrowych niedostarczanych na nośniku materialnym, jeżeli spełnianie świadczenia
+    rozpoczęło się za wyraźną i uprzednią zgodą Kupującego, który przyjął do wiadomości, że
+    utraci prawo odstąpienia, i potwierdził to (art. 38 ust. 1 pkt 13 ustawy o prawach
+    konsumenta).</li>
+  <li>Składając zamówienie, Kupujący wyraża zgodę, o której mowa w ust. 2, zaznaczając
+    odpowiednie oświadczenie przed płatnością. W konsekwencji, z chwilą rozpoczęcia
+    pobierania (udostępnienia pliku) Kupujący <strong>traci prawo odstąpienia</strong> od
+    umowy.</li>
+  <li>Powyższe nie ogranicza uprawnień Kupującego z tytułu niezgodności treści cyfrowej z
+    umową (§ 7).</li>
+</ol>
+
+<h2 class="h5 mt-4">§ 7. Reklamacje</h2>
+<ol>
+  <li>Kupujący może złożyć reklamację, jeżeli dostarczona treść cyfrowa jest niezgodna z
+    umową (np. plik nie został dostarczony, jest uszkodzony, ma inny format lub istotnie
+    inną liczbę rekordów niż zamówiona).</li>
+  <li>Reklamację składa się na adres <a href="mailto:<%= seller.email %>"><%= seller.email %></a>,
+    podając <strong>numer zamówienia</strong> (identyfikator transakcji widoczny po zakupie)
+    oraz opis problemu.</li>
+  <li>Sprzedawca rozpatruje reklamację w terminie 14 dni. W pierwszej kolejności doprowadza
+    treść cyfrową do zgodności z umową (np. przez ponowne albo poprawione udostępnienie
+    pliku); obniżenie ceny lub zwrot środków przysługuje, gdy doprowadzenie do zgodności jest
+    niemożliwe albo nadmiernie utrudnione, na zasadach określonych w ustawie o prawach
+    konsumenta.</li>
+  <li>Przypomina się, że braki lub nieaktualność pojedynczych danych kontaktowych wynikające
+    z charakteru źródeł (§ 3) nie stanowią niezgodności z umową.</li>
+</ol>
+
+<h2 class="h5 mt-4">§ 8. Licencja i dozwolony sposób korzystania z bazy</h2>
+<ol>
+  <li>Baza danych podlega ochronie, w tym ochronie sui generis przysługującej producentowi
+    bazy danych. Z chwilą zakupu Sprzedawca udziela Kupującemu <strong>niewyłącznej,
+    nieprzenoszalnej licencji</strong> na korzystanie z pobranego eksportu wyłącznie na
+    <strong>własny użytek wewnętrzny</strong> Kupującego.</li>
+  <li>Kupującemu <strong>nie wolno</strong>, bez odrębnej pisemnej zgody Sprzedawcy:
+    <ul>
+      <li>modyfikować ani edytować bazy w celu jej dalszego rozpowszechniania w zmienionej
+        postaci;</li>
+      <li>upubliczniać bazy ani jej istotnej części w jakiejkolwiek formie (w tym w internecie);</li>
+      <li>odsprzedawać, wynajmować, użyczać ani w inny sposób udostępniać bazy lub jej
+        istotnej części osobom trzecim — odpłatnie lub nieodpłatnie;</li>
+      <li>pobierać ani wtórnie wykorzystywać istotnej części bazy w sposób sprzeczny z
+        normalnym korzystaniem lub godzący w słuszne interesy Sprzedawcy jako producenta
+        bazy.</li>
+    </ul>
+  </li>
+  <li>Korzystanie z eksportu na własny użytek wewnętrzny (np. kontaktowanie się z
+    instytucjami w granicach prawa) jest dozwolone.</li>
+  <li>Naruszenie zasad licencji uprawnia Sprzedawcę do dochodzenia roszczeń przewidzianych
+    prawem.</li>
+</ol>
+
+<h2 class="h5 mt-4">§ 9. Dane osobowe</h2>
+<p>Zasady przetwarzania danych osobowych — zarówno Kupujących i użytkowników Serwisu, jak i
+  osób, których dane mogą znajdować się w bazie — opisuje
+  <a href="/polityka-prywatnosci">Polityka prywatności</a>.</p>
+
+<h2 class="h5 mt-4">§ 10. Pozasądowe rozwiązywanie sporów</h2>
+<p>Konsument może skorzystać z pozasądowych sposobów rozpatrywania reklamacji i dochodzenia
+  roszczeń, m.in. zwracając się do powiatowego (miejskiego) rzecznika konsumentów lub
+  wojewódzkiego inspektora Inspekcji Handlowej. Skorzystanie z tych procedur jest dobrowolne.</p>
+
+<h2 class="h5 mt-4">§ 11. Postanowienia końcowe</h2>
+<ol>
+  <li>Sprzedawca może zmienić Regulamin z ważnych przyczyn (np. zmiana przepisów, zmiana
+    zakresu usług). Do zamówień złożonych przed zmianą stosuje się Regulamin w wersji z chwili
+    zakupu; wersja zaakceptowana przy zakupie jest zapisywana wraz z zamówieniem.</li>
+  <li>W sprawach nieuregulowanych stosuje się przepisy prawa polskiego, w szczególności
+    Kodeksu cywilnego, ustawy o prawach konsumenta oraz ustawy o świadczeniu usług drogą
+    elektroniczną.</li>
+</ol>

@@ -10,10 +10,14 @@
     "dev": "node --watch app.js",
     "etl": "node etl/run.js",
     "enrich": "node scripts/enrich_contacts.js",
+    "vendor": "node scripts/vendor.js",
     "test": "node --test"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "better-sqlite3": "^11.10.0",
+    "bootstrap": "^5.3.3",
+    "bootstrap-icons": "^1.11.3",
     "compression": "^1.7.5",
     "dejavu-fonts-ttf": "^2.37.3",
     "dotenv": "^16.4.7",
@@ -23,6 +27,7 @@
     "express-rate-limit": "^7.5.0",
     "express-session": "^1.18.1",
     "helmet": "^8.0.0",
+    "nodemailer": "^6.10.1",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "pdfkit": "^0.15.2",

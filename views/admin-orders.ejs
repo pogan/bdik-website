@@ -27,7 +27,7 @@
               <th>Identyfikator transakcji</th>
               <th>Zakres</th>
               <th class="text-end">Kwota brutto</th>
-              <th>E-mail</th>
+              <th>E-mail / dane do faktury</th>
               <th class="text-end">Pobrań</th>
               <th class="text-end">Plik</th>
             </tr>
@@ -62,7 +62,18 @@
                   <%= o.amountLabel %>
                   <div class="text-secondary" style="font-size:.75rem">netto <%= o.netLabel %> + VAT <%= o.vatLabel %></div>
                 </td>
-                <td class="text-nowrap"><%= o.email || '—' %></td>
+                <td>
+                  <div class="text-nowrap"><%= o.email || '—' %></div>
+                  <% if (o.billingTaxId) { %>
+                    <div class="text-secondary" style="font-size:.75rem">NIP: <span class="user-select-all"><%= o.billingTaxId %></span></div>
+                  <% } %>
+                  <% if (o.billingName) { %>
+                    <div class="text-secondary" style="font-size:.75rem"><%= o.billingName %></div>
+                  <% } %>
+                  <% if (o.billingAddress) { %>
+                    <div class="text-secondary" style="font-size:.75rem"><%= o.billingAddress %></div>
+                  <% } %>
+                </td>
                 <td class="text-end"><%= o.downloadCount %></td>
                 <td class="text-end text-nowrap">
                   <% if (o.backupUrl) { %>
@@ -87,6 +98,9 @@
     <% } %>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <%- include('partials/footer') %>
+
+  <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="/js/cookies.js"></script>
 </body>
 </html>
