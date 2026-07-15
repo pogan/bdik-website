@@ -3,8 +3,18 @@ const rateLimit = require('express-rate-limit');
 const db = require('../db');
 const orders = require('../lib/orders');
 const { countInstitutions } = require('../lib/query');
-const { priceFor, formatAmount, lineItemName, describeFilters, CURRENCY, FORMAT_LABELS } = require('../lib/pricing');
-const { stripe, stripeConfigured, baseUrl } = require('../lib/stripe');
+const {
+  priceBreakdown,
+  breakdownFromNet,
+  formatAmount,
+  formatPricePerRow,
+  lineItemName,
+  describeFilters,
+  CURRENCY,
+  VAT_RATE,
+  FORMAT_LABELS,
+} = require('../lib/pricing');
+const { stripe, stripeConfigured, baseUrl, getVatTaxRateId } = require('../lib/stripe');
 const { ensureBackup, saveBackupSafe } = require('../lib/backup');
 
 const router = express.Router();
@@ -24,6 +34,21 @@ function requireStripe(req, res, next) {
   return next();
 }
 
+// Rozbicie kosztów w kształcie dla modala/paragonu (netto, VAT 23%, brutto oraz
+// średnia cena za rekord). Liczone z zapisanego netto - także po zmianie cennika
+// zamówienie pokazuje kwotę faktycznie pobraną.
+function pricingPayload(net, rowCount) {
+  const { net: netAmount, vat, gross } = breakdownFromNet(net);
+  return {
+    rowCount,
+    perRowLabel: formatPricePerRow(rowCount > 0 ? netAmount / rowCount : 0),
+    netLabel: formatAmount(netAmount),
+    vatRate: Math.round(VAT_RATE * 100),
+    vatLabel: formatAmount(vat),
+    grossLabel: formatAmount(gross),
+  };
+}
+
 // Stan zamówienia w kształcie, jakiego oczekuje frontend (public/js/checkout.js).
 function orderPayload(order) {
   const selection = orders.parseSelection(order);
@@ -32,14 +57,17 @@ function orderPayload(order) {
   // numer widzi klient jako potwierdzenie i podaje przy reklamacji. Zanim pi
   // powstanie (przed opłaceniem) używamy tokenu; findByDownloadId ogarnia oba.
   const downloadPath = `/pobierz/${order.stripe_payment_intent || order.token}`;
+  // order.amount trzyma NETTO; brutto (to, co realnie płaci klient) liczymy z niego.
+  const { gross } = breakdownFromNet(order.amount);
   return {
     token: order.token,
     status: order.status,
     format: order.format,
     formatLabel: FORMAT_LABELS[order.format] || order.format,
     rowCount: order.row_count,
-    amount: order.amount,
-    amountLabel: formatAmount(order.amount),
+    amount: gross,
+    amountLabel: formatAmount(gross),
+    pricing: pricingPayload(order.amount, order.row_count),
     description: describeFilters({ ...selection.filters, q: selection.q }),
     paymentIntent: order.stripe_payment_intent || null,
     downloadUrl: state.ok ? downloadPath : null,
@@ -88,14 +116,15 @@ router.post('/api/checkout/quote', express.json(), (req, res) => {
 
   const selection = orders.normalizeSelection(req.body);
   const rowCount = countInstitutions(db, { filters: selection.filters, search: selection.q });
-  const amount = priceFor(rowCount);
+  const bd = priceBreakdown(rowCount);
 
   return res.json({
     format,
     formatLabel: FORMAT_LABELS[format],
     rowCount,
-    amount,
-    amountLabel: formatAmount(amount),
+    amount: bd.gross,
+    amountLabel: formatAmount(bd.gross),
+    pricing: pricingPayload(bd.net, rowCount),
     description: describeFilters({ ...selection.filters, q: selection.q }),
   });
 });
@@ -117,7 +146,8 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireStripe, asy
     if (rowCount === 0) {
       return res.status(400).json({ error: 'Wybrane filtry nie zwracają żadnych instytucji - nie ma czego eksportować.' });
     }
-    const amount = priceFor(rowCount);
+    // Netto z cennika; VAT dolicza Stripe przez stawkę podatku (poniżej).
+    const { net, vat, gross } = priceBreakdown(rowCount);
 
     const order = orders.createOrder({
       userId: req.user ? req.user.id : null,
@@ -125,31 +155,38 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireStripe, asy
       format,
       selection,
       rowCount,
-      amount,
+      amount: net,
       currency: CURRENCY,
     });
+
+    // Stawkę VAT rozliczamy jako osobny TaxRate: pozycja jest netto, a Stripe
+    // dolicza 23% i pokazuje rozbicie. Gdyby ustalenie stawki się nie udało
+    // (przejściowy błąd API), nie blokujemy sprzedaży - pobieramy brutto jako
+    // jedną pozycję (ta sama kwota końcowa), a rozbicie zostaje w metadanych.
+    let vatTaxRateId = null;
+    try {
+      vatTaxRateId = await getVatTaxRateId();
+    } catch (err) {
+      console.error('Stripe: nie udało się ustalić stawki VAT, pobieram brutto jako jedną pozycję:', err.message);
+    }
+    const productData = {
+      name: lineItemName(format, rowCount),
+      description: describeFilters({ ...selection.filters, q: selection.q }),
+    };
+    const lineItem = vatTaxRateId
+      ? { quantity: 1, tax_rates: [vatTaxRateId], price_data: { currency: CURRENCY, unit_amount: net, product_data: productData } }
+      : { quantity: 1, price_data: { currency: CURRENCY, unit_amount: gross, product_data: productData } };
+    const priceMeta = { net: String(net), vat: String(vat), gross: String(gross) };
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       ui_mode: 'embedded_page',
       // Bez payment_method_types - Stripe sam dobiera metody (BLIK, P24, karta)
       // na podstawie waluty i kraju klienta; zestaw włączamy w Dashboardzie.
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: CURRENCY,
-            unit_amount: amount,
-            product_data: {
-              name: lineItemName(format, rowCount),
-              description: describeFilters({ ...selection.filters, q: selection.q }),
-            },
-          },
-        },
-      ],
+      line_items: [lineItem],
       client_reference_id: order.token,
-      metadata: { order_token: order.token, format, row_count: String(rowCount) },
-      payment_intent_data: { metadata: { order_token: order.token } },
+      metadata: { order_token: order.token, format, row_count: String(rowCount), ...priceMeta },
+      payment_intent_data: { metadata: { order_token: order.token, ...priceMeta } },
       ...(req.user ? { customer_email: req.user.email } : {}),
       // 'if_required', nie 'never': metody bez przekierowania (karta, Link)
       // kończą się w modalu przez onComplete (public/js/checkout.js), ale BLIK,
