@@ -1,7 +1,7 @@
 const express = require('express');
 const orders = require('../lib/orders');
 const { isAdmin } = require('../lib/projection');
-const { formatAmount, describeFilters, FORMAT_LABELS } = require('../lib/pricing');
+const { formatAmount, breakdownFromNet, describeFilters, FORMAT_LABELS } = require('../lib/pricing');
 const { ensureBackup } = require('../lib/backup');
 const { baseUrl } = require('../lib/stripe');
 
@@ -22,6 +22,8 @@ function adminRow(order) {
   const selection = orders.parseSelection(order);
   const state = orders.downloadState(order);
   const downloadId = order.stripe_payment_intent || order.token;
+  // order.amount to NETTO; w panelu pokazujemy brutto (kwotę pobraną) z rozbiciem.
+  const { net, vat, gross } = breakdownFromNet(order.amount);
   return {
     id: order.id,
     identifier: order.stripe_payment_intent || null,
@@ -31,7 +33,9 @@ function adminRow(order) {
     format: order.format,
     formatLabel: FORMAT_LABELS[order.format] || order.format,
     rowCount: order.row_count,
-    amountLabel: formatAmount(order.amount),
+    amountLabel: formatAmount(gross),
+    netLabel: formatAmount(net),
+    vatLabel: formatAmount(vat),
     description: describeFilters({ ...selection.filters, q: selection.q }),
     createdAt: order.created_at,
     paidAt: order.paid_at,

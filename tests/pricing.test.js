@@ -1,6 +1,15 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { priceFor, formatAmount, describeFilters, MIN_AMOUNT, MAX_AMOUNT } = require('../lib/pricing');
+const {
+  priceFor,
+  priceBreakdown,
+  breakdownFromNet,
+  formatAmount,
+  formatPricePerRow,
+  describeFilters,
+  MIN_AMOUNT,
+  MAX_AMOUNT,
+} = require('../lib/pricing');
 
 test('priceFor: pusty zestaw wyników kosztuje 0 (nie ma czego sprzedać)', () => {
   assert.equal(priceFor(0), 0);
@@ -37,6 +46,33 @@ test('priceFor: zawsze pełne grosze (Stripe nie przyjmie ułamka)', () => {
   for (const rows of [1, 7, 123, 4567, 98765]) {
     assert.equal(priceFor(rows) % 1, 0);
   }
+});
+
+test('breakdownFromNet: ceny w cenniku są netto, VAT 23% doliczany na wierzchu', () => {
+  // 19,00 zł netto -> VAT 4,37 zł -> 23,37 zł brutto
+  assert.deepEqual(breakdownFromNet(1900), { net: 1900, vat: 437, gross: 2337 });
+  assert.deepEqual(breakdownFromNet(0), { net: 0, vat: 0, gross: 0 });
+});
+
+test('priceBreakdown: brutto = netto + VAT, a VAT to pełne grosze', () => {
+  const bd = priceBreakdown(100); // netto 2500 gr
+  assert.equal(bd.net, 2500);
+  assert.equal(bd.vat, 575); // 2500 * 0,23
+  assert.equal(bd.gross, 3075);
+  assert.equal(bd.gross, bd.net + bd.vat);
+  assert.equal(bd.vat % 1, 0);
+});
+
+test('priceBreakdown: pusty zestaw jest darmowy, a cena za rekord to średnia netto', () => {
+  assert.equal(priceBreakdown(0).gross, 0);
+  const bd = priceBreakdown(500); // netto 8500 gr
+  assert.equal(bd.net, 8500);
+  assert.equal(bd.perRow, 8500 / 500);
+});
+
+test('formatPricePerRow: ułamek grosza z trzema miejscami po przecinku', () => {
+  assert.equal(formatPricePerRow(19.58), '0,196 zł');
+  assert.equal(formatPricePerRow(0), '0,000 zł');
 });
 
 test('formatAmount: kwota po polsku, z przecinkiem', () => {
