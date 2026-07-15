@@ -78,6 +78,37 @@ test('findByToken nie daje się nabrać na token spoza formatu', () => {
   assert.equal(orders.findByToken('krotki'), undefined);
 });
 
+test('findByPaymentIntent znajduje zamówienie po numerze transakcji Stripe', () => {
+  const pi = `pi_${Date.now()}Abc`;
+  const paid = orders.markPaid(newOrder(), { paymentIntent: pi });
+
+  assert.equal(orders.findByPaymentIntent(pi).id, paid.id);
+  // Numer reklamacyjny to jedyny publiczny identyfikator - format musi się zgadzać.
+  assert.equal(orders.findByPaymentIntent("pi_'; DROP TABLE orders; --"), undefined);
+  assert.equal(orders.findByPaymentIntent('ch_123'), undefined);
+});
+
+test('findByDownloadId przyjmuje zarówno pi_..., jak i stary token', () => {
+  const pi = `pi_${Date.now()}Xyz`;
+  const paid = orders.markPaid(newOrder(), { paymentIntent: pi });
+
+  assert.equal(orders.findByDownloadId(pi).id, paid.id);
+  assert.equal(orders.findByDownloadId(paid.token).id, paid.id);
+  assert.equal(orders.findByDownloadId('cokolwiek'), undefined);
+});
+
+test('link do pobrania wygasa po DOWNLOAD_TTL_HOURS (24 h)', () => {
+  assert.equal(orders.DOWNLOAD_TTL_HOURS, 24);
+
+  const paid = orders.markPaid(newOrder());
+  assert.ok(orders.downloadState(paid).ok);
+
+  // Cofamy paid_at o 25 h - poza oknem ważności linku.
+  const stale = `${new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ')}`;
+  require('../db').prepare('UPDATE orders SET paid_at = ? WHERE id = ?').run(stale, paid.id);
+  assert.deepEqual(orders.downloadState(orders.findByToken(paid.token)), { ok: false, reason: 'expired' });
+});
+
 test('rememberEvent: to samo zdarzenie Stripe przetwarzamy tylko raz', () => {
   const id = `evt_${Date.now()}`;
   assert.equal(orders.rememberEvent(id, 'checkout.session.completed'), true);

@@ -1,5 +1,6 @@
 const express = require('express');
 const orders = require('../lib/orders');
+const { saveBackupSafe } = require('../lib/backup');
 const { stripe, webhookSecret } = require('../lib/stripe');
 
 const router = express.Router();
@@ -39,10 +40,13 @@ router.post('/stripe', (req, res) => {
     case 'checkout.session.completed':
     case 'checkout.session.async_payment_succeeded':
       if (session.payment_status === 'paid') {
-        orders.markPaid(order, {
+        const paid = orders.markPaid(order, {
           paymentIntent: typeof session.payment_intent === 'string' ? session.payment_intent : null,
           email: session.customer_details ? session.customer_details.email : null,
         });
+        // Kopia zapasowa powstaje w tle - błąd generowania nie może zablokować
+        // potwierdzenia 200 dla Stripe (inaczej dostawca ponowi webhooka).
+        saveBackupSafe(paid);
       }
       break;
     case 'checkout.session.async_payment_failed':

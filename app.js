@@ -9,10 +9,12 @@ const db = require('./db');
 const SqliteSessionStore = require('./lib/sqliteSessionStore');
 const { passport } = require('./lib/auth');
 const { publishableKey, stripeConfigured } = require('./lib/stripe');
+const { isAdmin } = require('./lib/projection');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const paymentRoutes = require('./routes/payments');
 const webhookRoutes = require('./routes/webhooks');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 
@@ -48,9 +50,16 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Flaga administratora dostępna we wszystkich widokach (np. link do panelu w nav).
+app.use((req, res, next) => {
+  res.locals.isAdmin = isAdmin(req);
+  next();
+});
+
 app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 
 app.use('/api', apiRoutes);
+app.use('/admin', adminRoutes);
 app.use('/', authRoutes);
 app.use('/', paymentRoutes);
 

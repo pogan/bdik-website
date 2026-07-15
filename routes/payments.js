@@ -5,7 +5,7 @@ const orders = require('../lib/orders');
 const { countInstitutions } = require('../lib/query');
 const { priceFor, formatAmount, lineItemName, describeFilters, CURRENCY, FORMAT_LABELS } = require('../lib/pricing');
 const { stripe, stripeConfigured, baseUrl } = require('../lib/stripe');
-const { streamExport } = require('../lib/exportRun');
+const { ensureBackup, saveBackupSafe } = require('../lib/backup');
 
 const router = express.Router();
 
@@ -28,7 +28,10 @@ function requireStripe(req, res, next) {
 function orderPayload(order) {
   const selection = orders.parseSelection(order);
   const state = orders.downloadState(order);
-  const downloadPath = `/pobierz/${order.token}`;
+  // Publiczny link budujemy z identyfikatora transakcji Stripe (pi_...) - ten sam
+  // numer widzi klient jako potwierdzenie i podaje przy reklamacji. Zanim pi
+  // powstanie (przed opłaceniem) używamy tokenu; findByDownloadId ogarnia oba.
+  const downloadPath = `/pobierz/${order.stripe_payment_intent || order.token}`;
   return {
     token: order.token,
     status: order.status,
@@ -62,10 +65,12 @@ async function syncOrderFromStripe(order) {
   }
 
   if (session.payment_status === 'paid') {
-    return orders.markPaid(order, {
+    const paid = orders.markPaid(order, {
       paymentIntent: typeof session.payment_intent === 'string' ? session.payment_intent : null,
       email: session.customer_details ? session.customer_details.email : null,
     });
+    saveBackupSafe(paid);
+    return paid;
   }
   if (session.status === 'expired') {
     return orders.markStatus(order, 'expired');
@@ -194,16 +199,19 @@ router.get('/platnosc', async (req, res, next) => {
 
 const DOWNLOAD_ERRORS = {
   unpaid: [402, 'Ten eksport nie został opłacony.'],
-  expired: [410, `Link wygasł (ważny ${orders.DOWNLOAD_TTL_DAYS} dni od zakupu).`],
+  expired: [410, `Link wygasł (ważny ${orders.DOWNLOAD_TTL_HOURS} godz. od zakupu).`],
   limit: [429, `Wyczerpano limit pobrań (${orders.MAX_DOWNLOADS}).`],
   not_found: [404, 'Nie znaleziono zamówienia.'],
 };
 
-// Plik generujemy z kryteriów ZAPISANYCH w zamówieniu, nie z parametrów URL -
-// to jest miejsce, w którym płatność faktycznie bramkuje dane.
-router.get('/pobierz/:token', async (req, res, next) => {
+// Publiczne pobranie po opłaceniu. Identyfikator w URL to pi_... (numer
+// transakcji), ale stare linki z samym tokenem nadal działają. Plik serwujemy
+// z kopii zapasowej na dysku - a jeśli jej jeszcze nie ma, generujemy ją teraz
+// z kryteriów ZAPISANYCH w zamówieniu (nie z parametrów URL). To wciąż miejsce,
+// w którym płatność faktycznie bramkuje dane: bez statusu 'paid' nie ma pliku.
+router.get('/pobierz/:id', async (req, res, next) => {
   try {
-    const order = orders.findByToken(req.params.token);
+    const order = orders.findByDownloadId(req.params.id);
     if (!order) return res.status(404).send(DOWNLOAD_ERRORS.not_found[1]);
 
     const synced = await syncOrderFromStripe(order);
@@ -213,13 +221,11 @@ router.get('/pobierz/:token', async (req, res, next) => {
       return res.status(status).send(message);
     }
 
-    const selection = orders.parseSelection(synced);
+    const filePath = await ensureBackup(synced);
     orders.registerDownload(synced);
 
-    return streamExport(res, {
-      format: synced.format,
-      selection,
-      filename: `instytucje-kultury-${synced.token.slice(0, 8)}`,
+    return res.download(filePath, `instytucje-kultury-${synced.token.slice(0, 8)}.${synced.format}`, (err) => {
+      if (err && !res.headersSent) next(err);
     });
   } catch (err) {
     return next(err);

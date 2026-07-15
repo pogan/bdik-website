@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { queryInstitutions, coverageCounts, facetValues } = require('../lib/query');
-const { isAuthorized, fieldsForRequest } = require('../lib/projection');
+const { isAuthorized, isAdmin, fieldsForRequest } = require('../lib/projection');
 const { normalizeSelection, EXPORT_FORMATS } = require('../lib/orders');
 const { streamExport } = require('../lib/exportRun');
 
@@ -11,7 +11,7 @@ const router = express.Router();
 // Ta ścieżka zostaje wyłącznie dla administratora - inaczej byłaby darmową
 // furtką omijającą płatność.
 function requireAdmin(req, res, next) {
-  if (!isAuthorized(req) || req.user.role !== 'admin') {
+  if (!isAdmin(req)) {
     return res.status(403).json({ error: 'Eksport jest płatny. Użyj przycisku pobierania na stronie bazy.' });
   }
   return next();
