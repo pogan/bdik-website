@@ -1,0 +1,32 @@
+<footer class="border-top mt-5 py-4 bg-white">
+  <div class="container">
+    <div class="row gy-3 small text-secondary">
+      <div class="col-12 col-md-6">
+        <div class="fw-semibold text-body mb-1"><%= seller.name %></div>
+        <% if (seller.address) { %><div><%= seller.address %></div><% } %>
+        <% if (seller.nip) { %><div>NIP: <%= seller.nip %></div><% } %>
+        <% if (seller.regon) { %><div>REGON: <%= seller.regon %></div><% } %>
+        <% if (seller.email) { %>
+          <div><i class="bi bi-envelope me-1"></i><a href="mailto:<%= seller.email %>"><%= seller.email %></a></div>
+        <% } %>
+      </div>
+      <div class="col-12 col-md-6 text-md-end">
+        <ul class="list-unstyled mb-2">
+          <li><a href="/regulamin">Regulamin</a></li>
+          <li><a href="/polityka-prywatnosci">Polityka prywatności</a></li>
+          <li><a href="/polityka-prywatnosci#cookies">Pliki cookies</a></li>
+          <li><a href="/polityka-prywatnosci#dane-w-bazie">Dane instytucji w bazie</a></li>
+        </ul>
+        <div>© <%= new Date().getFullYear() %> <%= seller.name %></div>
+      </div>
+    </div>
+    <p class="text-secondary mt-3 mb-0" style="font-size:.8rem">
+      Dane instytucji pochodzą z publicznie dostępnych rejestrów (m.in. KRS) oraz
+      ręcznych uzupełnień. Sprzedawca nie gwarantuje ich kompletności ani zgodności
+      ze stanem faktycznym - część rekordów może nie zawierać telefonu, e-maila lub
+      adresu WWW, co widać podczas filtrowania bazy.
+    </p>
+  </div>
+</footer>
+
+<%- include('cookie-banner') %>

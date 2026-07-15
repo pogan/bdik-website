@@ -1,0 +1,73 @@
+<%
+  // Polityka prywatności. Dane administratora z res.locals.seller.
+  // Szkic przygotowany programistycznie - zalecany przegląd prawnika przed produkcją.
+%>
+<h1 class="h3 mb-1">Polityka prywatności</h1>
+<p class="text-secondary">Dotyczy Serwisu Baza Instytucji Kultury.</p>
+
+<h2 class="h5 mt-4">1. Administrator danych</h2>
+<p>Administratorem danych osobowych jest <strong><%= seller.name %></strong><% if (seller.address) { %>,
+  <%= seller.address %><% } %><% if (seller.nip) { %>, NIP <%= seller.nip %><% } %>.
+  Kontakt w sprawach danych osobowych: <a href="mailto:<%= seller.email %>"><%= seller.email %></a>.</p>
+
+<h2 class="h5 mt-4">2. Dane Kupujących i użytkowników Serwisu</h2>
+<ul>
+  <li><strong>Realizacja zamówienia i płatność</strong> — adres e-mail, zakres i parametry
+    zamówienia, informacje o płatności. Podstawa: art. 6 ust. 1 lit. b RODO (wykonanie umowy).
+    Płatność obsługuje operator Stripe (Stripe Payments Europe, Ltd.), który jest odrębnym
+    odbiorcą/administratorem danych transakcyjnych.</li>
+  <li><strong>Faktury i obowiązki podatkowe</strong> — dane niezbędne do wystawienia faktury
+    (w tym NIP i adres, jeśli podane). Podstawa: art. 6 ust. 1 lit. c RODO (obowiązek prawny).</li>
+  <li><strong>Logowanie</strong> — dla użytkowników korzystających z logowania Google
+    przetwarzamy adres e-mail i identyfikator konta Google, w modelu listy dostępu. Podstawa:
+    art. 6 ust. 1 lit. b/f RODO.</li>
+  <li><strong>Sesja</strong> — niezbędny plik cookie sesji (patrz sekcja Cookies), ważny do
+    30 dni.</li>
+</ul>
+<p><strong>Okresy przechowywania:</strong> dane zamówień i dane niezbędne do rozliczeń
+  przechowujemy przez okres wymagany przepisami podatkowymi i przedawnienia roszczeń; dane
+  logowania — do czasu usunięcia dostępu. <strong>Prawa:</strong> dostęp do danych,
+  sprostowanie, usunięcie, ograniczenie, przenoszenie, sprzeciw oraz skarga do Prezesa Urzędu
+  Ochrony Danych Osobowych. Żądania prosimy kierować na
+  <a href="mailto:<%= seller.email %>"><%= seller.email %></a>.</p>
+
+<h2 class="h5 mt-4" id="dane-w-bazie">3. Dane instytucji znajdujące się w bazie</h2>
+<p>Poniższa informacja realizuje obowiązek informacyjny wobec osób, których dane mogą
+  znajdować się w bazie, a nie zostały pozyskane bezpośrednio od nich (art. 14 RODO).</p>
+<ul>
+  <li><strong>Źródła danych:</strong> publicznie dostępne rejestry (w szczególności Krajowy
+    Rejestr Sądowy) oraz publicznie dostępne informacje ze stron internetowych instytucji,
+    a także ręczne uzupełnienia.</li>
+  <li><strong>Kategorie danych:</strong> dane identyfikujące i teleadresowe instytucji
+    (nazwa, adres, numery REGON/NIP/KRS) oraz służbowe dane kontaktowe (telefon, e-mail,
+    adres WWW). Dane te dotyczą przede wszystkim podmiotów i kontaktów służbowych; w
+    pojedynczych przypadkach mogą stanowić dane osób fizycznych (np. działalność
+    jednoosobowa lub imienny adres e-mail).</li>
+  <li><strong>Cel i podstawa:</strong> udostępnianie uporządkowanej bazy instytucji kultury
+    odbiorcom (sprzedaż eksportów). Podstawa: art. 6 ust. 1 lit. f RODO — prawnie uzasadniony
+    interes polegający na agregowaniu i udostępnianiu publicznie dostępnych danych
+    kontaktowych podmiotów.</li>
+  <li><strong>Odbiorcy:</strong> Kupujący, którzy nabywają eksport i stają się niezależnymi
+    administratorami danych zawartych w pliku.</li>
+  <li><strong>Prawa:</strong> osobie, której dane dotyczą, przysługuje prawo dostępu,
+    sprostowania, usunięcia, ograniczenia oraz <strong>sprzeciwu</strong> wobec przetwarzania.
+    Na żądanie usuniemy dany rekord z bazy (opt-out) — również w sposób trwały wobec kolejnych
+    aktualizacji danych. Zgłoszenia prosimy kierować na
+    <a href="mailto:<%= seller.email %>"><%= seller.email %></a>, wskazując instytucję (np.
+    nazwę i numer REGON).</li>
+</ul>
+<p>Sprzedawca nie gwarantuje kompletności ani zgodności danych ze stanem faktycznym; część
+  rekordów nie zawiera pełnych danych kontaktowych.</p>
+
+<h2 class="h5 mt-4" id="cookies">4. Pliki cookies</h2>
+<ul>
+  <li><strong>Cookie sesji (niezbędny):</strong> utrzymuje stan sesji i logowania. Jest
+    konieczny do działania Serwisu, dlatego nie wymaga zgody. Ważność do 30 dni.</li>
+  <li><strong>Cookies operatora płatności:</strong> podczas płatności osadzony formularz
+    Stripe może zapisywać własne pliki cookies niezbędne do obsługi i bezpieczeństwa
+    transakcji.</li>
+  <li>Serwis nie korzysta z plików cookies marketingowych ani z zewnętrznych narzędzi
+    śledzących. Zasoby (czcionki, biblioteki interfejsu) serwowane są z własnego serwera.</li>
+</ul>
+<p>Ustawienia cookies można zmienić w przeglądarce; usunięcie niezbędnego cookie sesji może
+  jednak uniemożliwić poprawne korzystanie z Serwisu.</p>
