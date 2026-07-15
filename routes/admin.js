@@ -7,8 +7,22 @@ const { baseUrl } = require('../lib/stripe');
 
 const router = express.Router();
 
-// Cały panel jest wyłącznie dla administratora (rola 'admin' lub e-mail z
-// ADMIN_EMAILS). Dla przeglądarki oddajemy 403 jako stronę, nie JSON.
+// Strona logowania administratora. Logowanie w serwisie odbywa się WYŁĄCZNIE tu
+// (na stronie głównej nie ma przycisku logowania). Zalogowanego admina od razu
+// przenosimy do panelu; zalogowanego bez uprawnień informujemy o braku dostępu.
+router.get('/', (req, res) => {
+  if (isAdmin(req)) return res.redirect('/admin/orders');
+  if (req.user) {
+    return res.status(403).render('admin-forbidden', { user: req.user });
+  }
+  return res.render('admin-login', {
+    user: null,
+    loginFailed: req.query.login === 'failed',
+  });
+});
+
+// Pozostałe podstrony panelu są wyłącznie dla administratora (rola 'admin' lub
+// e-mail z ADMIN_EMAILS). Dla przeglądarki oddajemy 403 jako stronę, nie JSON.
 router.use((req, res, next) => {
   if (!isAdmin(req)) {
     return res.status(403).render('admin-forbidden', { user: req.user || null });

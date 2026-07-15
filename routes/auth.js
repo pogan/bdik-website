@@ -15,10 +15,10 @@ router.get('/auth/google', (req, res, next) => {
 router.get(
   '/auth/google/callback',
   (req, res, next) => {
-    if (!googleConfigured) return res.redirect('/baza');
-    return passport.authenticate('google', { failureRedirect: '/baza?login=failed' })(req, res, next);
+    if (!googleConfigured) return res.redirect('/admin');
+    return passport.authenticate('google', { failureRedirect: '/admin?login=failed' })(req, res, next);
   },
-  (req, res) => res.redirect('/baza')
+  (req, res) => res.redirect('/admin')
 );
 
 router.post('/logout', (req, res, next) => {
