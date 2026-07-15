@@ -19,16 +19,16 @@ test('priceFor: pusty zestaw wyników kosztuje 0 (nie ma czego sprzedać)', () =
 
 test('priceFor: mały wycinek wpada na próg minimalny', () => {
   assert.equal(priceFor(1), MIN_AMOUNT);
-  assert.equal(priceFor(75), MIN_AMOUNT); // 75 * 0,25 zł = 18,75 zł < 19 zł
+  assert.equal(priceFor(15), MIN_AMOUNT); // 15 * 1 zł = 15 zł < 19 zł
 });
 
 test('priceFor: progi liczą się kaskadowo, jak progi podatkowe', () => {
-  // 100 * 25 = 2500 gr
-  assert.equal(priceFor(100), 2500);
-  // 100*25 + 400*15 = 2500 + 6000 = 8500 gr
-  assert.equal(priceFor(500), 8500);
-  // 100*25 + 900*15 = 2500 + 13500 = 16000 gr
-  assert.equal(priceFor(1000), 16000);
+  // 100 * 100 = 10000 gr
+  assert.equal(priceFor(100), 10000);
+  // 100*100 + 400*80 = 10000 + 32000 = 42000 gr
+  assert.equal(priceFor(500), 42000);
+  // 100*100 + 900*80 = 10000 + 72000 = 82000 gr
+  assert.equal(priceFor(1000), 82000);
 });
 
 test('priceFor: cena rośnie monotonicznie i nigdy nie przebija sufitu', () => {
@@ -55,19 +55,19 @@ test('breakdownFromNet: ceny w cenniku są netto, VAT 23% doliczany na wierzchu'
 });
 
 test('priceBreakdown: brutto = netto + VAT, a VAT to pełne grosze', () => {
-  const bd = priceBreakdown(100); // netto 2500 gr
-  assert.equal(bd.net, 2500);
-  assert.equal(bd.vat, 575); // 2500 * 0,23
-  assert.equal(bd.gross, 3075);
+  const bd = priceBreakdown(100); // netto 10000 gr
+  assert.equal(bd.net, 10000);
+  assert.equal(bd.vat, 2300); // 10000 * 0,23
+  assert.equal(bd.gross, 12300);
   assert.equal(bd.gross, bd.net + bd.vat);
   assert.equal(bd.vat % 1, 0);
 });
 
 test('priceBreakdown: pusty zestaw jest darmowy, a cena za rekord to średnia netto', () => {
   assert.equal(priceBreakdown(0).gross, 0);
-  const bd = priceBreakdown(500); // netto 8500 gr
-  assert.equal(bd.net, 8500);
-  assert.equal(bd.perRow, 8500 / 500);
+  const bd = priceBreakdown(500); // netto 42000 gr
+  assert.equal(bd.net, 42000);
+  assert.equal(bd.perRow, 42000 / 500);
 });
 
 test('formatPricePerRow: ułamek grosza z trzema miejscami po przecinku', () => {
