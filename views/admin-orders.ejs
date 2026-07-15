@@ -26,7 +26,7 @@
               <th>Status</th>
               <th>Identyfikator transakcji</th>
               <th>Zakres</th>
-              <th class="text-end">Kwota</th>
+              <th class="text-end">Kwota brutto</th>
               <th>E-mail</th>
               <th class="text-end">Pobrań</th>
               <th class="text-end">Plik</th>
@@ -58,7 +58,10 @@
                   <span class="fw-semibold"><%= o.formatLabel %> · <%= o.rowCount %></span>
                   <div class="text-secondary"><%= o.description %></div>
                 </td>
-                <td class="text-end text-nowrap"><%= o.amountLabel %></td>
+                <td class="text-end text-nowrap">
+                  <%= o.amountLabel %>
+                  <div class="text-secondary" style="font-size:.75rem">netto <%= o.netLabel %> + VAT <%= o.vatLabel %></div>
+                </td>
                 <td class="text-nowrap"><%= o.email || '—' %></td>
                 <td class="text-end"><%= o.downloadCount %></td>
                 <td class="text-end text-nowrap">

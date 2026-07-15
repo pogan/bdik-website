@@ -38,13 +38,21 @@
     el('checkout-container').innerHTML = '';
     el('checkout-summary-title').textContent = 'Przygotowywanie…';
     el('checkout-summary-filters').textContent = '';
-    el('checkout-summary-price').textContent = '—';
+    ['sum-rows', 'sum-perrow', 'sum-net', 'sum-vat', 'sum-gross'].forEach((id) => {
+      el(id).textContent = '—';
+    });
   }
 
   function renderSummary(data) {
     el('checkout-summary-title').textContent = `${data.formatLabel} · ${data.rowCount} instytucji`;
     el('checkout-summary-filters').textContent = data.description;
-    el('checkout-summary-price').textContent = data.amountLabel;
+    const p = data.pricing || {};
+    el('sum-rows').textContent = data.rowCount;
+    el('sum-perrow').textContent = p.perRowLabel || '—';
+    el('sum-net').textContent = p.netLabel || '—';
+    if (p.vatRate) el('sum-vat-label').textContent = `VAT (${p.vatRate}%)`;
+    el('sum-vat').textContent = p.vatLabel || '—';
+    el('sum-gross').textContent = p.grossLabel || data.amountLabel || '—';
   }
 
   // Przejście z widoku płatności do widoku wyniku - kwota/opis w nagłówku
