@@ -10,6 +10,8 @@ const SqliteSessionStore = require('./lib/sqliteSessionStore');
 const { passport } = require('./lib/auth');
 const { publishableKey, stripeConfigured } = require('./lib/stripe');
 const { isAdmin } = require('./lib/projection');
+const { seller } = require('./lib/sellerInfo');
+const { TERMS_VERSION, isKnownTermsVersion, termsViewName } = require('./lib/legal');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const paymentRoutes = require('./routes/payments');
@@ -22,8 +24,20 @@ app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Zasoby front-endu są już self-hostowane (public/vendor), więc CSP nie musi
+// dopuszczać CDN. CSP zostaje jednak WYŁĄCZONE do czasu testu z żywym Stripe:
+// osadzony Checkout ładuje js.stripe.com i ramki checkout.stripe.com, a strona ma
+// też inline'owy <script> (window.BDIK_STRIPE) - włączenie błędnej polityki psuje
+// płatności. Docelowa polityka do włączenia po weryfikacji płatności na produkcji:
+//   directives: {
+//     defaultSrc: ["'self'"],
+//     scriptSrc: ["'self'", "'unsafe-inline'", 'https://js.stripe.com'],
+//     frameSrc: ['https://js.stripe.com', 'https://checkout.stripe.com'],
+//     connectSrc: ["'self'", 'https://api.stripe.com'],
+//     imgSrc: ["'self'", 'data:', 'https:'],
+//   }
 app.use(helmet({
-  contentSecurityPolicy: false, // CDN Bootstrap/Google Fonts - dopracujemy CSP w kolejnym kroku
+  contentSecurityPolicy: false,
 }));
 app.use(compression());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -50,9 +64,12 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Flaga administratora dostępna we wszystkich widokach (np. link do panelu w nav).
+// Dane wspólne dla wszystkich widoków: flaga admina (link do panelu w nav),
+// dane sprzedawcy (stopka) i aktualna wersja regulaminu.
 app.use((req, res, next) => {
   res.locals.isAdmin = isAdmin(req);
+  res.locals.seller = seller;
+  res.locals.termsVersion = TERMS_VERSION;
   next();
 });
 
@@ -72,6 +89,36 @@ app.get('/baza', (req, res) => {
     user: req.user || null,
     stripePublishableKey: publishableKey,
     stripeConfigured,
+  });
+});
+
+// Strony prawne. Regulamin obowiązujący pod /regulamin; konkretną (także
+// archiwalną) wersję pod /regulamin/:wersja - potrzebne, bo e-mail potwierdzający
+// linkuje do wersji z chwili zakupu (orders.terms_version).
+app.get('/regulamin', (req, res) => {
+  res.render('legal', {
+    user: req.user || null,
+    document: termsViewName(TERMS_VERSION),
+    documentVersion: TERMS_VERSION,
+  });
+});
+
+app.get('/regulamin/:wersja', (req, res) => {
+  if (!isKnownTermsVersion(req.params.wersja)) {
+    return res.status(404).send('Nie znaleziono tej wersji regulaminu.');
+  }
+  return res.render('legal', {
+    user: req.user || null,
+    document: termsViewName(req.params.wersja),
+    documentVersion: req.params.wersja,
+  });
+});
+
+app.get('/polityka-prywatnosci', (req, res) => {
+  res.render('legal', {
+    user: req.user || null,
+    document: 'legal/polityka-prywatnosci',
+    documentVersion: null,
   });
 });
 

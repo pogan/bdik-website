@@ -16,8 +16,28 @@ const {
 } = require('../lib/pricing');
 const { stripe, stripeConfigured, baseUrl, getVatTaxRateId } = require('../lib/stripe');
 const { ensureBackup, saveBackupSafe } = require('../lib/backup');
+const { sendConfirmationSafe } = require('../lib/mailer');
+const { TERMS_VERSION } = require('../lib/legal');
 
 const router = express.Router();
+
+// Dane do faktury zebrane w Stripe Checkout (NIP, nazwa, adres nabywcy).
+function extractBilling(session) {
+  const cd = session.customer_details || {};
+  const taxId = Array.isArray(cd.tax_ids) && cd.tax_ids[0] ? cd.tax_ids[0].value : null;
+  const a = cd.address || {};
+  const address = [a.line1, a.line2, a.postal_code, a.city, a.country].filter(Boolean).join(', ') || null;
+  return { name: cd.name || null, taxId, address };
+}
+
+// Domknięcie opłaconego zamówienia poza webhookiem/synchronizacją: zapis danych do
+// faktury, kopia zapasowa i JEDNORAZOWE potwierdzenie e-mail (claim w orders).
+function finalizePaidOrder(order, session) {
+  const withBilling = orders.saveBilling(order, extractBilling(session));
+  saveBackupSafe(withBilling);
+  sendConfirmationSafe(withBilling);
+  return withBilling;
+}
 
 const checkoutLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -31,6 +51,15 @@ function requireStripe(req, res, next) {
   if (!stripeConfigured) {
     return res.status(503).json({ error: 'Płatności nie są skonfigurowane. Ustaw klucze STRIPE_* w .env.' });
   }
+  return next();
+}
+
+// Zgody prawne walidujemy PRZED requireStripe, żeby odmowa (400) nie zależała od
+// konfiguracji płatności - bez akceptacji regulaminu i oświadczenia o utracie
+// prawa odstąpienia nie zakładamy zamówienia.
+function requireConsents(req, res, next) {
+  const check = orders.validateConsents(req.body);
+  if (!check.ok) return res.status(400).json({ error: check.error });
   return next();
 }
 
@@ -97,8 +126,7 @@ async function syncOrderFromStripe(order) {
       paymentIntent: typeof session.payment_intent === 'string' ? session.payment_intent : null,
       email: session.customer_details ? session.customer_details.email : null,
     });
-    saveBackupSafe(paid);
-    return paid;
+    return finalizePaidOrder(paid, session);
   }
   if (session.status === 'expired') {
     return orders.markStatus(order, 'expired');
@@ -131,7 +159,7 @@ router.post('/api/checkout/quote', express.json(), (req, res) => {
 
 // Zakłada zamówienie i sesję Stripe Checkout (embedded - płatność dzieje się
 // w modalu, bez wychodzenia ze strony).
-router.post('/api/checkout', checkoutLimiter, express.json(), requireStripe, async (req, res, next) => {
+router.post('/api/checkout', checkoutLimiter, express.json(), requireConsents, requireStripe, async (req, res, next) => {
   try {
     const format = String(req.body.format || '').toLowerCase();
     if (!orders.EXPORT_FORMATS.includes(format)) {
@@ -157,6 +185,9 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireStripe, asy
       rowCount,
       amount: net,
       currency: CURRENCY,
+      // Wersja regulaminu zaakceptowana przy tym zakupie (zgody potwierdzone
+      // przez requireConsents; momenty zapisuje createOrder).
+      termsVersion: TERMS_VERSION,
     });
 
     // Stawkę VAT rozliczamy jako osobny TaxRate: pozycja jest netto, a Stripe
@@ -188,6 +219,13 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireStripe, asy
       metadata: { order_token: order.token, format, row_count: String(rowCount), ...priceMeta },
       payment_intent_data: { metadata: { order_token: order.token, ...priceMeta } },
       ...(req.user ? { customer_email: req.user.email } : {}),
+      // Zbieramy dane do faktury: NIP nabywcy i adres rozliczeniowy. Fakturę
+      // wystawiamy poza aplikacją (system zgodny z KSeF) na podstawie tych danych -
+      // dlatego NIE włączamy invoice_creation Stripe. customer_creation:'always'
+      // jest wymagane przez tax_id_collection w trybie 'payment'.
+      customer_creation: 'always',
+      tax_id_collection: { enabled: true },
+      billing_address_collection: 'auto',
       // 'if_required', nie 'never': metody bez przekierowania (karta, Link)
       // kończą się w modalu przez onComplete (public/js/checkout.js), ale BLIK,
       // Klarna i P24 WYMAGAJĄ przekierowania do banku - w trybie 'never' Stripe
@@ -271,3 +309,4 @@ router.get('/pobierz/:id', async (req, res, next) => {
 
 module.exports = router;
 module.exports.syncOrderFromStripe = syncOrderFromStripe;
+module.exports.finalizePaidOrder = finalizePaidOrder;

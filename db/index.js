@@ -24,4 +24,15 @@ function ensureColumn(table, column, definition) {
 
 ensureColumn('institutions', 'primary_source', "TEXT NOT NULL DEFAULT 'seed'");
 
+// Kolumny dodane wraz z warstwą zgodności prawnej (zgody, e-mail potwierdzający,
+// dane do faktury) - dla istniejących produkcyjnych baz, których CREATE TABLE
+// IF NOT EXISTS nie zmieni.
+ensureColumn('orders', 'terms_version', 'TEXT');
+ensureColumn('orders', 'terms_accepted_at', 'TEXT');
+ensureColumn('orders', 'withdrawal_consent_at', 'TEXT');
+ensureColumn('orders', 'confirmation_email_at', 'TEXT');
+ensureColumn('orders', 'billing_name', 'TEXT');
+ensureColumn('orders', 'billing_tax_id', 'TEXT');
+ensureColumn('orders', 'billing_address', 'TEXT');
+
 module.exports = db;

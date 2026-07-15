@@ -114,3 +114,38 @@ test('rememberEvent: to samo zdarzenie Stripe przetwarzamy tylko raz', () => {
   assert.equal(orders.rememberEvent(id, 'checkout.session.completed'), true);
   assert.equal(orders.rememberEvent(id, 'checkout.session.completed'), false);
 });
+
+test('validateConsents: bez zgód, z false lub ze stringiem "true" - odmowa', () => {
+  assert.equal(orders.validateConsents({}).ok, false);
+  assert.equal(orders.validateConsents({ termsAccepted: true }).ok, false);
+  assert.equal(orders.validateConsents({ withdrawalConsent: true }).ok, false);
+  assert.equal(orders.validateConsents({ termsAccepted: false, withdrawalConsent: false }).ok, false);
+  // Spreparowane żądanie ze stringami nie może przejść (wymagamy literalnego true).
+  assert.equal(orders.validateConsents({ termsAccepted: 'true', withdrawalConsent: 'true' }).ok, false);
+});
+
+test('validateConsents: oba oświadczenia jako true - zgoda', () => {
+  assert.deepEqual(orders.validateConsents({ termsAccepted: true, withdrawalConsent: true }), { ok: true });
+});
+
+test('createOrder: zapisuje wersję regulaminu i znaczniki zgód', () => {
+  const order = newOrder({ termsVersion: '2026-07-15' });
+  assert.equal(order.terms_version, '2026-07-15');
+  assert.ok(order.terms_accepted_at, 'terms_accepted_at powinno być ustawione');
+  assert.ok(order.withdrawal_consent_at, 'withdrawal_consent_at powinno być ustawione');
+});
+
+test('claimConfirmationEmail: zajmuje wysyłkę dokładnie raz (obrona przed dublem)', () => {
+  const paid = orders.markPaid(newOrder(), { paymentIntent: 'pi_mail_1', email: 'k@example.com' });
+  assert.equal(orders.claimConfirmationEmail(paid), true);
+  // Drugie wywołanie (np. z wyścigu webhook vs. synchronizacja) nic nie zajmuje.
+  assert.equal(orders.claimConfirmationEmail(orders.findByToken(paid.token)), false);
+});
+
+test('saveBilling: zapisuje dane do faktury pobrane ze Stripe', () => {
+  const paid = orders.markPaid(newOrder(), { paymentIntent: 'pi_bill_1' });
+  const updated = orders.saveBilling(paid, { name: 'Firma X', taxId: 'PL1234563218', address: 'ul. A 1, 00-001 Warszawa, PL' });
+  assert.equal(updated.billing_name, 'Firma X');
+  assert.equal(updated.billing_tax_id, 'PL1234563218');
+  assert.match(updated.billing_address, /Warszawa/);
+});
