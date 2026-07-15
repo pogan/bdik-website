@@ -100,7 +100,7 @@ Logowanie **nie tworzy** nowych kont automatycznie. Aby ktoś mógł się
 zalogować, jego e-mail musi wcześniej istnieć w tabeli `users`:
 
 ```bash
-node scripts/add_user.js ktos@example.com viewer
+node scripts/add_user.js ktos@example.com viewer/admin
 ```
 
 Konfiguracja OAuth (Google Cloud Console -> OAuth consent screen + Credentials):
