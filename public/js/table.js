@@ -152,13 +152,29 @@
     });
   }
 
-  function updateExportLinks(authorized) {
-    const container = document.getElementById('export-buttons');
-    container.hidden = !authorized;
-    if (!authorized) return;
-    container.querySelectorAll('a[data-format]').forEach((a) => {
-      const qs = buildQueryString({ format: a.dataset.format });
-      a.href = `/api/institutions/export?${qs}`;
+  // Kryteria wysyłane do wyceny i zapisywane w zamówieniu. Muszą pokrywać się
+  // z tym, co widać w tabeli - z nich serwer odtworzy plik po opłaceniu.
+  function exportSelection(format) {
+    const selection = { format, q: state.q, sort: state.sort, order: state.order };
+    for (const key of HIERARCHY) {
+      if (state[key]) selection[key] = state[key];
+    }
+    return selection;
+  }
+
+  // Eksport jest płatny, więc przyciski widzi każdy (także niezalogowany) -
+  // bramką jest potwierdzona płatność, nie logowanie.
+  function updateExportButtons(total) {
+    document.querySelectorAll('#export-buttons button[data-format]').forEach((btn) => {
+      btn.disabled = total === 0;
+    });
+  }
+
+  function attachExportHandlers() {
+    document.querySelectorAll('#export-buttons button[data-format]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        window.openCheckout(exportSelection(btn.dataset.format));
+      });
     });
   }
 
@@ -175,7 +191,7 @@
 
     document.getElementById('result-count').textContent = `${data.total} instytucji spełnia kryteria`;
     renderPagination(data.total, data.page, data.pageSize);
-    updateExportLinks(data.authorized);
+    updateExportButtons(data.total);
 
     document.querySelectorAll('#table-head th[data-sort]').forEach((th) => {
       th.addEventListener('click', () => {
@@ -224,6 +240,7 @@
 
   async function init() {
     attachFilterHandlers();
+    attachExportHandlers();
     await loadFacet('voivodeship');
     await loadFacet('county');
     await loadFacet('commune');
