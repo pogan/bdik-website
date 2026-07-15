@@ -104,6 +104,39 @@ CREATE TABLE IF NOT EXISTS users (
   last_login_at TEXT
 );
 
+-- Zamówienia eksportu. filters trzyma komplet kryteriów (JSON) z chwili zakupu -
+-- plik do pobrania generujemy WYŁĄCZNIE z tej kolumny, nigdy z parametrów URL,
+-- więc kupujący nie podmieni zakresu po zapłaceniu za mniejszy wycinek.
+CREATE TABLE IF NOT EXISTS orders (
+  id INTEGER PRIMARY KEY,
+  token TEXT NOT NULL UNIQUE,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  email TEXT,
+  format TEXT NOT NULL,
+  filters TEXT NOT NULL,
+  row_count INTEGER NOT NULL,
+  amount INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'pln',
+  status TEXT NOT NULL DEFAULT 'pending',
+  stripe_session_id TEXT UNIQUE,
+  stripe_payment_intent TEXT,
+  paid_at TEXT,
+  download_count INTEGER NOT NULL DEFAULT 0,
+  last_download_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_stripe_session ON orders(stripe_session_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+
+-- Stripe dostarcza webhooki "at least once" - ta tabela robi za klucz
+-- idempotencji, żeby powtórka tego samego zdarzenia nie liczyła się dwa razy.
+CREATE TABLE IF NOT EXISTS stripe_events (
+  id TEXT PRIMARY KEY,
+  type TEXT NOT NULL,
+  received_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Sesje (express-session) - patrz lib/sqliteSessionStore.js. Ten sam silnik
 -- (better-sqlite3) co reszta bazy, żeby nie mieszać dwóch sterowników SQLite.
 CREATE TABLE IF NOT EXISTS sessions (

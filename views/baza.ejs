@@ -12,10 +12,13 @@
         <h1 class="h4 mb-1">Instytucje kultury w Polsce</h1>
         <p class="text-secondary small mb-0" id="result-count">Ładowanie danych…</p>
       </div>
-      <div class="btn-group" id="export-buttons" hidden>
-        <a class="btn btn-outline-secondary btn-sm" href="#" data-format="csv"><i class="bi bi-filetype-csv me-1"></i>CSV</a>
-        <a class="btn btn-outline-secondary btn-sm" href="#" data-format="xlsx"><i class="bi bi-file-earmark-excel me-1"></i>XLSX</a>
-        <a class="btn btn-outline-secondary btn-sm" href="#" data-format="pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+      <div class="text-end">
+        <div class="btn-group" id="export-buttons">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-format="csv"><i class="bi bi-filetype-csv me-1"></i>CSV</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-format="xlsx"><i class="bi bi-file-earmark-excel me-1"></i>XLSX</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-format="pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
+        </div>
+        <div class="text-secondary small mt-1"><i class="bi bi-lock-fill me-1"></i>Pełne dane kontaktowe · płatny eksport</div>
       </div>
     </div>
 
@@ -75,7 +78,95 @@
     </nav>
   </main>
 
+  <div class="modal fade" id="payment-modal" tabindex="-1" aria-labelledby="payment-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="payment-modal-title">Pobierz eksport</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
+        </div>
+        <div class="modal-body">
+          <div class="border rounded p-3 mb-3 bg-light-subtle">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+              <div>
+                <div class="fw-semibold" id="checkout-summary-title">Przygotowywanie…</div>
+                <div class="text-secondary small" id="checkout-summary-filters"></div>
+              </div>
+              <div class="fs-4 fw-semibold text-nowrap" id="checkout-summary-price">—</div>
+            </div>
+          </div>
+
+          <div id="checkout-error" class="alert alert-danger d-none" role="alert"></div>
+
+          <!-- Widok płatności -->
+          <div id="checkout-pay">
+            <div id="checkout-loading" class="text-center text-secondary py-4">
+              <div class="spinner-border spinner-border-sm me-2" role="status"></div>Ładowanie formularza płatności…
+            </div>
+
+            <div id="checkout-container"></div>
+
+            <p class="text-secondary small mt-3 mb-0">
+              <i class="bi bi-shield-lock me-1"></i>Płatność obsługuje Stripe (BLIK, Przelewy24, karta).
+              Plik pobierzesz od razu po potwierdzeniu płatności.
+            </p>
+          </div>
+
+          <!-- Widok wyniku (po zamknięciu płatności zostajemy w tym samym modalu) -->
+          <div id="checkout-result" class="d-none">
+            <div id="result-pending" class="text-center py-4 d-none">
+              <div class="spinner-border text-primary" role="status"></div>
+              <h2 class="h6 mt-3 mb-1">Czekamy na potwierdzenie płatności</h2>
+              <p class="text-secondary small mb-0">Potwierdź płatność w aplikacji banku — ten widok odświeży się sam.</p>
+            </div>
+
+            <div id="result-paid" class="d-none">
+              <div class="text-center mb-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size:2.5rem"></i>
+                <h2 class="h5 mt-2 mb-0">Płatność potwierdzona</h2>
+              </div>
+
+              <dl class="row small mb-3">
+                <dt class="col-sm-4 text-secondary fw-normal">Identyfikator transakcji</dt>
+                <dd class="col-sm-8"><code id="result-payment-intent">—</code></dd>
+              </dl>
+
+              <div class="d-grid mb-3">
+                <a href="#" class="btn btn-primary btn-lg" id="result-download-btn">
+                  <i class="bi bi-download me-2"></i>Pobierz plik
+                </a>
+              </div>
+
+              <label class="form-label small text-secondary mb-1">Link do pobrania (możesz go skopiować i zachować)</label>
+              <div class="input-group input-group-sm mb-2">
+                <input type="text" class="form-control font-monospace" id="result-link" readonly>
+                <button class="btn btn-outline-secondary" type="button" id="result-copy-btn">
+                  <i class="bi bi-clipboard me-1"></i>Kopiuj
+                </button>
+              </div>
+              <p class="text-secondary small mb-0">Link działa przez 24 godziny od zakupu (do 10 pobrań).</p>
+            </div>
+
+            <div id="result-failed" class="d-none text-center py-4">
+              <i class="bi bi-x-circle-fill text-danger" style="font-size:2.5rem"></i>
+              <h2 class="h5 mt-2 mb-1">Płatność nie doszła do skutku</h2>
+              <p class="text-secondary small mb-0">Nie pobraliśmy żadnych środków. Zamknij to okno i spróbuj ponownie.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    window.BDIK_STRIPE = {
+      publishableKey: <%- JSON.stringify(stripePublishableKey || '') %>,
+      configured: <%- JSON.stringify(Boolean(stripeConfigured)) %>,
+    };
+  </script>
+  <script src="/js/checkout.js"></script>
   <script src="/js/table.js"></script>
 </body>
 </html>
