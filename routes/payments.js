@@ -146,10 +146,12 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireStripe, asy
       metadata: { order_token: order.token, format, row_count: String(rowCount) },
       payment_intent_data: { metadata: { order_token: order.token } },
       ...(req.user ? { customer_email: req.user.email } : {}),
-      // Bez return_url: nie przekierowujemy po płatności. Zamiast tego Stripe.js
-      // wywołuje onComplete, a status i link do pobrania pokazujemy w tym samym
-      // modalu (public/js/checkout.js).
-      redirect_on_completion: 'never',
+      // 'if_required', nie 'never': metody bez przekierowania (karta, Link)
+      // kończą się w modalu przez onComplete (public/js/checkout.js), ale BLIK,
+      // Klarna i P24 WYMAGAJĄ przekierowania do banku - w trybie 'never' Stripe
+      // by je ukrył. Dla nich Stripe użyje return_url i wróci na /platnosc.
+      redirect_on_completion: 'if_required',
+      return_url: `${baseUrl()}/platnosc?session_id={CHECKOUT_SESSION_ID}`,
     });
 
     orders.attachSession(order.id, session.id);
