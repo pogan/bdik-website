@@ -1,18 +1,21 @@
 (() => {
+  // Kolumny darmowe (realne dane także dla niezalogowanych): lokalizacja +
+  // adres pocztowy. Kolejność jak w tabeli.
   const PUBLIC_COLUMNS = [
     { key: 'name', label: 'Nazwa' },
     { key: 'voivodeship', label: 'Województwo' },
-    { key: 'locality', label: 'Miejscowość' },
-  ];
-
-  const EXTRA_COLUMNS = [
     { key: 'county', label: 'Powiat' },
+    { key: 'locality', label: 'Miejscowość' },
     {
       key: 'address',
       label: 'Adres',
       render: (r) => [r.street, r.building_no].filter(Boolean).join(' ') + (r.unit_no ? `/${r.unit_no}` : ''),
     },
     { key: 'postal_code', label: 'Kod pocztowy' },
+  ];
+
+  // Kolumny płatne (dla niezalogowanych zablurowane): dane kontaktowe + REGON.
+  const GATED_COLUMNS = [
     { key: 'phone', label: 'Telefon' },
     { key: 'email', label: 'E-mail' },
     {
@@ -23,7 +26,7 @@
     { key: 'regon', label: 'REGON' },
   ];
 
-  const BLURRED_PLACEHOLDERS = ['Powiat Przykładowy', 'ul. Przykładowa 12', '00-000', '+48 000 000 000', 'kontakt@przyklad.pl', 'www.przyklad.pl', '000000000'];
+  const BLURRED_PLACEHOLDERS = ['+48 000 000 000', 'kontakt@przyklad.pl', 'www.przyklad.pl', '000000000'];
 
   const HIERARCHY = ['voivodeship', 'county', 'commune', 'locality'];
   const SELECT_IDS = { voivodeship: 'f-voivodeship', county: 'f-county', commune: 'f-commune', locality: 'f-locality' };
@@ -97,8 +100,12 @@
     return ` <span class="badge rounded-pill bg-${tone}-subtle text-${tone}-emphasis coverage-badge" title="${escapeHtml(title)}">${stats.filled}/${coverage.total}</span>`;
   }
 
+  function renderCell(c, row) {
+    return c.render ? c.render(row) : escapeHtml(row[c.key] || '');
+  }
+
   function renderTableHead(authorized, coverage) {
-    const columns = PUBLIC_COLUMNS.concat(EXTRA_COLUMNS);
+    const columns = PUBLIC_COLUMNS.concat(GATED_COLUMNS);
     const head = document.getElementById('table-head');
     head.innerHTML = columns
       .map((c, i) => {
@@ -111,14 +118,13 @@
   }
 
   function renderRow(row, authorized) {
-    const cells = PUBLIC_COLUMNS.map((c) => `<td>${escapeHtml(row[c.key] || '')}</td>`);
+    const cells = PUBLIC_COLUMNS.map((c) => `<td>${renderCell(c, row) || ''}</td>`);
     if (authorized) {
-      EXTRA_COLUMNS.forEach((c) => {
-        const value = c.render ? c.render(row) : escapeHtml(row[c.key] || '');
-        cells.push(`<td>${value || ''}</td>`);
+      GATED_COLUMNS.forEach((c) => {
+        cells.push(`<td>${renderCell(c, row) || ''}</td>`);
       });
     } else {
-      EXTRA_COLUMNS.forEach((c, i) => {
+      GATED_COLUMNS.forEach((c, i) => {
         cells.push(`<td class="blurred-cell">${BLURRED_PLACEHOLDERS[i % BLURRED_PLACEHOLDERS.length]}</td>`);
       });
     }
