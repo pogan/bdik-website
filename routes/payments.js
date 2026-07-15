@@ -28,6 +28,7 @@ function requireStripe(req, res, next) {
 function orderPayload(order) {
   const selection = orders.parseSelection(order);
   const state = orders.downloadState(order);
+  const downloadPath = `/pobierz/${order.token}`;
   return {
     token: order.token,
     status: order.status,
@@ -37,7 +38,10 @@ function orderPayload(order) {
     amount: order.amount,
     amountLabel: formatAmount(order.amount),
     description: describeFilters({ ...selection.filters, q: selection.q }),
-    downloadUrl: state.ok ? `/pobierz/${order.token}` : null,
+    paymentIntent: order.stripe_payment_intent || null,
+    downloadUrl: state.ok ? downloadPath : null,
+    // Pełny adres do skopiowania przez klienta (działa poza sesją w przeglądarce).
+    downloadUrlAbsolute: state.ok ? `${baseUrl()}${downloadPath}` : null,
     downloadsLeft: state.ok ? state.downloadsLeft : 0,
     reason: state.ok ? null : state.reason,
   };
@@ -142,7 +146,10 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireStripe, asy
       metadata: { order_token: order.token, format, row_count: String(rowCount) },
       payment_intent_data: { metadata: { order_token: order.token } },
       ...(req.user ? { customer_email: req.user.email } : {}),
-      return_url: `${baseUrl()}/platnosc?session_id={CHECKOUT_SESSION_ID}`,
+      // Bez return_url: nie przekierowujemy po płatności. Zamiast tego Stripe.js
+      // wywołuje onComplete, a status i link do pobrania pokazujemy w tym samym
+      // modalu (public/js/checkout.js).
+      redirect_on_completion: 'never',
     });
 
     orders.attachSession(order.id, session.id);

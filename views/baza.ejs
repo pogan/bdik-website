@@ -98,16 +98,61 @@
 
           <div id="checkout-error" class="alert alert-danger d-none" role="alert"></div>
 
-          <div id="checkout-loading" class="text-center text-secondary py-4">
-            <div class="spinner-border spinner-border-sm me-2" role="status"></div>Ładowanie formularza płatności…
+          <!-- Widok płatności -->
+          <div id="checkout-pay">
+            <div id="checkout-loading" class="text-center text-secondary py-4">
+              <div class="spinner-border spinner-border-sm me-2" role="status"></div>Ładowanie formularza płatności…
+            </div>
+
+            <div id="checkout-container"></div>
+
+            <p class="text-secondary small mt-3 mb-0">
+              <i class="bi bi-shield-lock me-1"></i>Płatność obsługuje Stripe (BLIK, Przelewy24, karta).
+              Plik pobierzesz od razu po potwierdzeniu płatności.
+            </p>
           </div>
 
-          <div id="checkout-container"></div>
+          <!-- Widok wyniku (po zamknięciu płatności zostajemy w tym samym modalu) -->
+          <div id="checkout-result" class="d-none">
+            <div id="result-pending" class="text-center py-4 d-none">
+              <div class="spinner-border text-primary" role="status"></div>
+              <h2 class="h6 mt-3 mb-1">Czekamy na potwierdzenie płatności</h2>
+              <p class="text-secondary small mb-0">Potwierdź płatność w aplikacji banku — ten widok odświeży się sam.</p>
+            </div>
 
-          <p class="text-secondary small mt-3 mb-0">
-            <i class="bi bi-shield-lock me-1"></i>Płatność obsługuje Stripe (BLIK, Przelewy24, karta).
-            Plik pobierzesz od razu po potwierdzeniu płatności.
-          </p>
+            <div id="result-paid" class="d-none">
+              <div class="text-center mb-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size:2.5rem"></i>
+                <h2 class="h5 mt-2 mb-0">Płatność potwierdzona</h2>
+              </div>
+
+              <dl class="row small mb-3">
+                <dt class="col-sm-4 text-secondary fw-normal">Identyfikator transakcji</dt>
+                <dd class="col-sm-8"><code id="result-payment-intent">—</code></dd>
+              </dl>
+
+              <div class="d-grid mb-3">
+                <a href="#" class="btn btn-primary btn-lg" id="result-download-btn">
+                  <i class="bi bi-download me-2"></i>Pobierz plik
+                </a>
+              </div>
+
+              <label class="form-label small text-secondary mb-1">Link do pobrania (możesz go skopiować i zachować)</label>
+              <div class="input-group input-group-sm mb-2">
+                <input type="text" class="form-control font-monospace" id="result-link" readonly>
+                <button class="btn btn-outline-secondary" type="button" id="result-copy-btn">
+                  <i class="bi bi-clipboard me-1"></i>Kopiuj
+                </button>
+              </div>
+              <p class="text-secondary small mb-0">Link działa przez 7 dni od zakupu (do 10 pobrań).</p>
+            </div>
+
+            <div id="result-failed" class="d-none text-center py-4">
+              <i class="bi bi-x-circle-fill text-danger" style="font-size:2.5rem"></i>
+              <h2 class="h5 mt-2 mb-1">Płatność nie doszła do skutku</h2>
+              <p class="text-secondary small mb-0">Nie pobraliśmy żadnych środków. Zamknij to okno i spróbuj ponownie.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
