@@ -86,7 +86,7 @@
       const session = await postJson('/api/checkout', selection);
       renderSummary(session);
 
-      embedded = await stripe.initEmbeddedCheckout({ clientSecret: session.clientSecret });
+      embedded = await stripe.createEmbeddedCheckoutPage({ clientSecret: session.clientSecret });
       el('checkout-loading').classList.add('d-none');
       embedded.mount('#checkout-container');
     } catch (err) {

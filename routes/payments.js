@@ -122,7 +122,7 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireStripe, asy
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
-      ui_mode: 'embedded',
+      ui_mode: 'embedded_page',
       // Bez payment_method_types - Stripe sam dobiera metody (BLIK, P24, karta)
       // na podstawie waluty i kraju klienta; zestaw włączamy w Dashboardzie.
       line_items: [
