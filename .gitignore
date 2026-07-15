@@ -8,3 +8,4 @@ data/*.sqlite-shm
 data/*.sqlite-wal
 # Kopie zapasowe wygenerowanych eksportow (backup plikow zamowien)
 data/exports/
+.claude/worktrees/
