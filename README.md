@@ -1,4 +1,4 @@
-# Baza Instytucji Kultury (bdik-website) - MVP
+# Baza Danych Instytucji Kultury (bdik-website) - MVP
 
 Aplikacja udostępniająca bazę polskich instytucji kultury. Publiczny podgląd
 (nazwa, województwo, miejscowość) jest darmowy; pełne dane kontaktowe
