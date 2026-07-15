@@ -9,7 +9,7 @@
     {
       key: 'address',
       label: 'Adres',
-      render: (r) => [r.street, r.building_no].filter(Boolean).join(' ') + (r.unit_no ? `/${r.unit_no}` : ''),
+      render: (r) => [toTitleCase(r.street), r.building_no].filter(Boolean).join(' ') + (r.unit_no ? `/${r.unit_no}` : ''),
     },
     { key: 'postal_code', label: 'Kod pocztowy' },
   ];
@@ -51,6 +51,33 @@
     return div.innerHTML;
   }
 
+  // Polskie "słowa funkcyjne", które w środku nazwy zostają małą literą
+  // (np. "Gminny Ośrodek Kultury w Zabłociu", "Biblioteka nad Wisłą").
+  const LOWERCASE_WORDS = new Set([
+    'w', 'we', 'i', 'oraz', 'na', 'do', 'z', 'ze', 'od', 'nad', 'pod', 'przy',
+    'im', 'dla', 'o', 'a', 'lub', 'the', 'of',
+  ]);
+
+  // Rejestry (KRS/GUS) przechowują nazwy i lokalizacje WERSALIKAMI. Zamieniamy
+  // je na normalną wielkość liter wyłącznie przy wyświetlaniu - dane z API
+  // pozostają nietknięte. Wartości, które nie są w całości wielkimi literami
+  // (np. e-mail, adres WWW), zostawiamy bez zmian.
+  function toTitleCase(value) {
+    if (typeof value !== 'string' || !value) return value;
+    const letters = value.replace(/[^\p{L}]/gu, '');
+    if (!letters || letters !== letters.toUpperCase()) return value;
+
+    let wordIndex = 0;
+    return value.toLowerCase().replace(/\p{L}[\p{L}’']*/gu, (word, offset) => {
+      const isFirst = wordIndex === 0;
+      wordIndex += 1;
+      const prevChar = value[offset - 1];
+      // Po myślniku zawsze kapitalizujemy (np. "Bielsko-Biała").
+      if (!isFirst && prevChar !== '-' && LOWERCASE_WORDS.has(word)) return word;
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    });
+  }
+
   function buildQueryString(extra = {}) {
     const params = new URLSearchParams();
     for (const key of HIERARCHY) {
@@ -76,7 +103,9 @@
     const data = await res.json();
     const select = document.getElementById(SELECT_IDS[level]);
     const current = state[level];
-    select.innerHTML = '<option value="">Wszystkie</option>' + data.values.map((v) => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+    // value = oryginalna wartość z rejestru (wysyłana do backendu jako filtr),
+    // tekst = ładniejsza wielkość liter tylko do wyświetlenia.
+    select.innerHTML = '<option value="">Wszystkie</option>' + data.values.map((v) => `<option value="${escapeHtml(v)}">${escapeHtml(toTitleCase(v))}</option>`).join('');
     select.value = data.values.includes(current) ? current : '';
     state[level] = select.value;
   }
@@ -101,7 +130,7 @@
   }
 
   function renderCell(c, row) {
-    return c.render ? c.render(row) : escapeHtml(row[c.key] || '');
+    return c.render ? c.render(row) : escapeHtml(toTitleCase(row[c.key] || ''));
   }
 
   function renderTableHead(authorized, coverage) {
