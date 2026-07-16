@@ -1,12 +1,7 @@
-<%
-  // Tytuł strony wyprowadzamy z nazwy dołączanego dokumentu, żeby trasy nie
-  // musiały go przekazywać osobno.
-  const docTitle = document.includes('polityka') ? 'Polityka prywatności' : 'Regulamin';
-%>
 <!doctype html>
 <html lang="pl">
 <head>
-  <%- include('partials/head', { title: `${docTitle} - Baza Danych Instytucji Kultury` }) %>
+  <%- include('partials/head') %>
 </head>
 <body>
   <%- include('partials/nav', { user: typeof user !== 'undefined' ? user : null }) %>

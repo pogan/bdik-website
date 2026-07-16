@@ -14,6 +14,7 @@ const { adminViewSpec } = require('./lib/adminTable');
 const { seller } = require('./lib/sellerInfo');
 const { lastDataUpdate } = require('./lib/dataFreshness');
 const { TERMS_VERSION, isKnownTermsVersion, termsViewName } = require('./lib/legal');
+const { baseUrl, canonicalUrl } = require('./lib/seo');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const paymentRoutes = require('./routes/payments');
@@ -77,16 +78,63 @@ app.use((req, res, next) => {
 
 app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 
+// robots.txt / sitemap.xml zbudowane z tej samej listy publicznych,
+// indeksowalnych tras co render'y poniżej - trzymamy je razem, żeby dodanie
+// nowej strony publicznej nie wymagało pamiętania o osobnym pliku.
+const PUBLIC_PAGES = [
+  { path: '/baza', changefreq: 'daily', priority: '1.0' },
+  { path: '/regulamin', changefreq: 'monthly', priority: '0.3' },
+  { path: '/polityka-prywatnosci', changefreq: 'monthly', priority: '0.3' },
+];
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(
+    [
+      'User-agent: *',
+      'Allow: /',
+      'Disallow: /admin',
+      'Disallow: /platnosc',
+      'Disallow: /pobierz',
+      'Disallow: /api',
+      'Disallow: /auth',
+      '',
+      `Sitemap: ${baseUrl()}/sitemap.xml`,
+      '',
+    ].join('\n')
+  );
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  const urls = PUBLIC_PAGES.map(
+    (page) =>
+      `  <url>\n` +
+      `    <loc>${canonicalUrl(page.path)}</loc>\n` +
+      `    <changefreq>${page.changefreq}</changefreq>\n` +
+      `    <priority>${page.priority}</priority>\n` +
+      `  </url>`
+  ).join('\n');
+  res.type('application/xml').send(
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`
+  );
+});
+
 app.use('/api', apiRoutes);
 app.use('/admin', adminRoutes);
 app.use('/', authRoutes);
 app.use('/', paymentRoutes);
 
 app.get('/', (req, res) => {
-  res.redirect('/baza');
+  // 301 (nie domyślne 302 Expressa): to strona główna domeny, więc powinna
+  // przekazywać pełną wagę SEO na /baza zamiast rozbijać ją między dwa adresy.
+  res.redirect(301, '/baza');
 });
 
 app.get('/baza', (req, res) => {
+  const description =
+    'Baza ponad 2 200 domów kultury, bibliotek i centrów kultury w Polsce. ' +
+    'Filtruj po województwie, powiecie, gminie i miejscowości, sprawdź dane ' +
+    'kontaktowe i wyeksportuj listę do CSV, XLSX lub PDF.';
   res.render('baza', {
     user: req.user || null,
     stripePublishableKey: publishableKey,
@@ -96,17 +144,43 @@ app.get('/baza', (req, res) => {
     // taka jak dotąd.
     adminView: isAdmin(req) ? adminViewSpec() : null,
     dataUpdatedAt: lastDataUpdate(),
+    title: 'Baza Danych Instytucji Kultury — kontakty do domów kultury i bibliotek',
+    description,
+    robots: 'index, follow',
+    canonicalUrl: canonicalUrl('/baza'),
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      name: 'Baza Danych Instytucji Kultury',
+      description,
+      url: canonicalUrl('/baza'),
+      license: canonicalUrl('/regulamin'),
+      isAccessibleForFree: false,
+      keywords: ['domy kultury', 'biblioteki', 'centra kultury', 'instytucje kultury', 'kontakty'],
+      creator: {
+        '@type': 'Organization',
+        name: seller.name,
+        email: seller.email,
+        url: baseUrl(),
+      },
+    },
   });
 });
 
 // Strony prawne. Regulamin obowiązujący pod /regulamin; konkretną (także
 // archiwalną) wersję pod /regulamin/:wersja - potrzebne, bo e-mail potwierdzający
-// linkuje do wersji z chwili zakupu (orders.terms_version).
+// linkuje do wersji z chwili zakupu (orders.terms_version). Wszystkie wersje
+// canonicalizują na /regulamin, żeby archiwalne treści (niemal identyczne)
+// nie konkurowały ze sobą o indeksację jako duplikaty.
 app.get('/regulamin', (req, res) => {
   res.render('legal', {
     user: req.user || null,
     document: termsViewName(TERMS_VERSION),
     documentVersion: TERMS_VERSION,
+    title: 'Regulamin — Baza Danych Instytucji Kultury',
+    description: 'Regulamin świadczenia usług i sprzedaży eksportów danych w serwisie Baza Danych Instytucji Kultury.',
+    robots: 'index, follow',
+    canonicalUrl: canonicalUrl('/regulamin'),
   });
 });
 
@@ -118,6 +192,10 @@ app.get('/regulamin/:wersja', (req, res) => {
     user: req.user || null,
     document: termsViewName(req.params.wersja),
     documentVersion: req.params.wersja,
+    title: `Regulamin (wersja z ${req.params.wersja}) — Baza Danych Instytucji Kultury`,
+    description: 'Archiwalna wersja regulaminu serwisu Baza Danych Instytucji Kultury.',
+    robots: 'index, follow',
+    canonicalUrl: canonicalUrl('/regulamin'),
   });
 });
 
@@ -126,11 +204,15 @@ app.get('/polityka-prywatnosci', (req, res) => {
     user: req.user || null,
     document: 'legal/polityka-prywatnosci',
     documentVersion: null,
+    title: 'Polityka prywatności — Baza Danych Instytucji Kultury',
+    description: 'Polityka prywatności i informacje o plikach cookies w serwisie Baza Danych Instytucji Kultury.',
+    robots: 'index, follow',
+    canonicalUrl: canonicalUrl('/polityka-prywatnosci'),
   });
 });
 
 app.use((req, res) => {
-  res.status(404).send('Nie znaleziono');
+  res.status(404).render('404', { user: req.user || null });
 });
 
 app.use((err, req, res, next) => {

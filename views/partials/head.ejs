@@ -1,6 +1,37 @@
+<%
+  // Domyślnie noindex: strony, które nie przekażą jawnie canonicalUrl (panel
+  // admina, płatność, logowanie) nie powinny trafiać do indeksu z automatu -
+  // bezpieczniejszy błąd niż odwrotnie. Strony publiczne (baza, regulamin,
+  // polityka prywatności) przekazują canonicalUrl i robots: 'index, follow'.
+  const metaTitle = typeof title !== 'undefined' ? title : 'Baza Danych Instytucji Kultury';
+  const metaDescription = typeof description !== 'undefined'
+    ? description
+    : 'Baza ponad 2 200 domów kultury, bibliotek i centrów kultury w Polsce - filtruj po województwie, powiecie, gminie i miejscowości.';
+  const metaRobots = typeof robots !== 'undefined' ? robots : 'noindex, nofollow';
+  const metaCanonical = typeof canonicalUrl !== 'undefined' ? canonicalUrl : null;
+  const metaOgTitle = typeof ogTitle !== 'undefined' ? ogTitle : metaTitle;
+%>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><%= typeof title !== 'undefined' ? title : 'Baza Danych Instytucji Kultury' %></title>
+<title><%= metaTitle %></title>
+<meta name="description" content="<%= metaDescription %>">
+<meta name="robots" content="<%= metaRobots %>">
+<% if (metaCanonical) { %>
+<link rel="canonical" href="<%= metaCanonical %>">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pl_PL">
+<meta property="og:site_name" content="Baza Danych Instytucji Kultury">
+<meta property="og:title" content="<%= metaOgTitle %>">
+<meta property="og:description" content="<%= metaDescription %>">
+<meta property="og:url" content="<%= metaCanonical %>">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="<%= metaOgTitle %>">
+<meta name="twitter:description" content="<%= metaDescription %>">
+<% } %>
+
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 
 <!-- Zasoby serwowane z własnego serwera (public/vendor) - bez CDN, żeby nie
      wyciekać IP użytkowników do Google/jsDelivr. Aktualizacja: scripts/vendor.js. -->
@@ -9,3 +40,7 @@
 <link rel="stylesheet" href="/vendor/bootstrap-icons/bootstrap-icons.min.css">
 
 <link rel="stylesheet" href="/css/custom.css">
+
+<% if (typeof structuredData !== 'undefined' && structuredData) { %>
+<script type="application/ld+json"><%- JSON.stringify(structuredData).replace(/</g, '\\u003c') %></script>
+<% } %>

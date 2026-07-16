@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <%- include('partials/head', { title: 'Nie znaleziono strony — Baza Danych Instytucji Kultury', robots: 'noindex, nofollow' }) %>
+</head>
+<body>
+  <%- include('partials/nav', { user: typeof user !== 'undefined' ? user : null }) %>
+
+  <main class="container py-5 text-center">
+    <h1 class="h3 mb-3">Nie znaleziono strony</h1>
+    <p class="text-secondary mb-4">Strona, której szukasz, nie istnieje albo została przeniesiona.</p>
+    <a href="/baza" class="btn btn-primary">Wróć do bazy</a>
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="/js/cookies.js"></script>
+</body>
+</html>
