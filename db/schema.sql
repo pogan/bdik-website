@@ -160,6 +160,14 @@ CREATE TABLE IF NOT EXISTS stripe_events (
   received_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Licznik odwiedzin w stopce: unikalne IP (zahaszowane sha256, nie trzymamy
+-- surowych adresów) - COUNT(*) z tej tabeli = liczba unikalnych odwiedzających.
+CREATE TABLE IF NOT EXISTS visits (
+  ip_hash TEXT PRIMARY KEY,
+  first_seen TEXT NOT NULL DEFAULT (datetime('now')),
+  last_seen TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Sesje (express-session) - patrz lib/sqliteSessionStore.js. Ten sam silnik
 -- (better-sqlite3) co reszta bazy, żeby nie mieszać dwóch sterowników SQLite.
 CREATE TABLE IF NOT EXISTS sessions (

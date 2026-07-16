@@ -15,6 +15,7 @@ const { seller } = require('./lib/sellerInfo');
 const { lastDataUpdate } = require('./lib/dataFreshness');
 const { TERMS_VERSION, isKnownTermsVersion, termsViewName } = require('./lib/legal');
 const { baseUrl, canonicalUrl } = require('./lib/seo');
+const { recordVisit, visitCount } = require('./lib/visits');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const paymentRoutes = require('./routes/payments');
@@ -73,6 +74,22 @@ app.use((req, res, next) => {
   res.locals.isAdmin = isAdmin(req);
   res.locals.seller = seller;
   res.locals.termsVersion = TERMS_VERSION;
+  next();
+});
+
+// Licznik odwiedzin w stopce: tylko realne wejścia na strony (GET, poza API,
+// panelem admina i logowaniem), żeby wywołania AJAX-owe i callbacki OAuth nie
+// zawyżały liczby.
+app.use((req, res, next) => {
+  if (
+    req.method === 'GET' &&
+    !req.path.startsWith('/api') &&
+    !req.path.startsWith('/admin') &&
+    !req.path.startsWith('/auth')
+  ) {
+    recordVisit(req.ip);
+  }
+  res.locals.visitCount = visitCount();
   next();
 });
 
