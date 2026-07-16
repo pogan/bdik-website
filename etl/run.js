@@ -63,6 +63,7 @@ async function runSource(source) {
   let inserted = 0;
   let updated = 0;
   let skippedNoKey = 0;
+  let skippedNoRegon = 0;
   let skippedOptout = 0;
 
   const transaction = db.transaction((raw) => {
@@ -104,6 +105,13 @@ async function runSource(source) {
       });
       institutionId = existing.id;
       updated += 1;
+    } else if (!canonical.regon) {
+      // institutions.regon to NOT NULL UNIQUE - REGON jest kluczem naturalnym
+      // encji, więc bez niego nowego wiersza założyć się nie da (drugi pusty
+      // REGON zerwałby UNIQUE). Źródło bez REGON-u (RIK) może tylko wzbogacać
+      // instytucje dopasowane po nazwie i adresie; niedopasowanych nie zakłada.
+      skippedNoRegon += 1;
+      return;
     } else {
       const result = insertInstitution.run({ ...canonical, primary_source: source.name });
       institutionId = result.lastInsertRowid;
@@ -117,7 +125,7 @@ async function runSource(source) {
     transaction(raw);
   }
 
-  return { source: source.name, inserted, updated, skippedNoKey, skippedOptout };
+  return { source: source.name, inserted, updated, skippedNoKey, skippedNoRegon, skippedOptout };
 }
 
 async function main() {
