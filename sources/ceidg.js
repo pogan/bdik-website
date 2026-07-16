@@ -2,8 +2,7 @@
 // kultury nieistotne (są jednostkami budżetowymi, nie JDG) - przydatne
 // głównie dla prywatnych galerii/pracowni prowadzonych jako działalność.
 // Mock: fixture JSON. Docelowo REST API wg specyfikacji dane.gov.pl (CEIDG).
-const fs = require('fs');
-const path = require('path');
+const { readJsonFixture } = require('./fixtures');
 const {
   padRegon,
   isValidRegon,
@@ -15,13 +14,15 @@ const {
   normalizeDate,
 } = require('../etl/normalize');
 
-const FIXTURE_PATH = path.join(__dirname, '__fixtures__', 'ceidg.json');
-
 module.exports = {
   name: 'ceidg',
 
+  // Źródło w całości oparte na fixture'ach (brak trybu żywego) - ETL pomija
+  // je przy NODE_ENV=production, patrz etl/run.js.
+  fixtureOnly: true,
+
   async *fetch() {
-    const records = JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8'));
+    const records = readJsonFixture('ceidg.json');
     for (const record of records) {
       yield record;
     }

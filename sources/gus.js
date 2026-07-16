@@ -3,8 +3,7 @@
 // a nie odkrywania nowych instytucji jak RIK/KRS/CEIDG.
 // Mock: fixture JSON. Docelowo klient SOAP/REST GUS BIR wymaga klucza API
 // (wniosek do GUS) - stąd na razie brak żywego trybu.
-const fs = require('fs');
-const path = require('path');
+const { readJsonFixture } = require('./fixtures');
 const {
   padRegon,
   isValidRegon,
@@ -16,13 +15,15 @@ const {
   splitPkd,
 } = require('../etl/normalize');
 
-const FIXTURE_PATH = path.join(__dirname, '__fixtures__', 'gus.json');
-
 module.exports = {
   name: 'gus',
 
+  // Źródło w całości oparte na fixture'ach (brak trybu żywego) - ETL pomija
+  // je przy NODE_ENV=production, patrz etl/run.js.
+  fixtureOnly: true,
+
   async *fetch() {
-    const records = JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8'));
+    const records = readJsonFixture('gus.json');
     for (const record of records) {
       yield record;
     }

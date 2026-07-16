@@ -10,7 +10,9 @@ const SqliteSessionStore = require('./lib/sqliteSessionStore');
 const { passport } = require('./lib/auth');
 const { publishableKey, stripeConfigured } = require('./lib/stripe');
 const { isAdmin } = require('./lib/projection');
+const { adminViewSpec } = require('./lib/adminTable');
 const { seller } = require('./lib/sellerInfo');
+const { lastDataUpdate } = require('./lib/dataFreshness');
 const { TERMS_VERSION, isKnownTermsVersion, termsViewName } = require('./lib/legal');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
@@ -89,6 +91,11 @@ app.get('/baza', (req, res) => {
     user: req.user || null,
     stripePublishableKey: publishableKey,
     stripeConfigured,
+    // Rozszerzony widok (wszystkie kolumny + filtr na każdej z nich) dostaje
+    // wyłącznie administrator; dla reszty spec jest pusty, więc tabela zostaje
+    // taka jak dotąd.
+    adminView: isAdmin(req) ? adminViewSpec() : null,
+    dataUpdatedAt: lastDataUpdate(),
   });
 });
 

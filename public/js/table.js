@@ -31,6 +31,11 @@
   const HIERARCHY = ['voivodeship', 'county', 'commune', 'locality'];
   const SELECT_IDS = { voivodeship: 'f-voivodeship', county: 'f-county', commune: 'f-commune', locality: 'f-locality' };
 
+  // Widok administratora: pełna lista kolumn tabeli institutions wraz z trybem
+  // filtrowania każdej z nich. Serwer wstawia go tylko dla admina (views/baza.ejs),
+  // więc dla pozostałych użytkowników cała ta gałąź jest martwa.
+  const ADMIN_VIEW = Array.isArray(window.BDIK_ADMIN_VIEW) ? window.BDIK_ADMIN_VIEW : null;
+
   const state = {
     voivodeship: '',
     county: '',
@@ -41,6 +46,8 @@
     order: 'asc',
     page: 1,
     pageSize: 25,
+    // Wartości filtrów administratora, kluczowane nazwą kolumny.
+    admin: {},
   };
 
   let searchDebounce = null;
@@ -82,6 +89,9 @@
     const params = new URLSearchParams();
     for (const key of HIERARCHY) {
       if (state[key]) params.set(key, state[key]);
+    }
+    for (const [key, value] of Object.entries(state.admin)) {
+      if (value) params.set(key, value);
     }
     if (state.q) params.set('q', state.q);
     params.set('sort', state.sort);
@@ -133,20 +143,60 @@
     return c.render ? c.render(row) : escapeHtml(toTitleCase(row[c.key] || ''));
   }
 
+  // Pola zapisane w rejestrach wersalikami - tylko im poprawiamy wielkość liter.
+  // Kolumny techniczne (nazwa znormalizowana, daty, identyfikatory) zostają
+  // dokładnie takie, jakie są w bazie, bo administrator patrzy tu na surowe dane.
+  const TITLE_CASE_FIELDS = new Set([
+    'name', 'legal_form', 'voivodeship', 'county', 'commune', 'locality',
+    'street', 'post_office', 'pkd_main_desc',
+  ]);
+
+  const ADMIN_RENDERERS = {
+    regon_valid: (r) => (Number(r.regon_valid) === 1 ? 'tak' : 'nie'),
+    website: (r) => (r.website ? `<a href="${escapeHtml(r.website)}" target="_blank" rel="noopener noreferrer">${escapeHtml(r.website)}</a>` : ''),
+    email: (r) => (r.email ? `<a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>` : ''),
+  };
+
+  // Kolumny widoku administratora: wszystkie pola tabeli institutions, w
+  // kolejności ze speca serwera.
+  function adminColumns() {
+    return ADMIN_VIEW.map((f) => ({
+      key: f.key,
+      label: f.label,
+      sortable: Boolean(f.sortable),
+      render: ADMIN_RENDERERS[f.key] || ((r) => {
+        const value = r[f.key] === null || r[f.key] === undefined ? '' : String(r[f.key]);
+        return escapeHtml(TITLE_CASE_FIELDS.has(f.key) ? toTitleCase(value) : value);
+      }),
+    }));
+  }
+
+  function visibleColumns() {
+    if (ADMIN_VIEW) return adminColumns();
+    return PUBLIC_COLUMNS.concat(GATED_COLUMNS).map((c) => ({
+      ...c,
+      sortable: ['name', 'voivodeship', 'county', 'commune', 'locality', 'postal_code'].includes(c.key),
+    }));
+  }
+
   function renderTableHead(authorized, coverage) {
-    const columns = PUBLIC_COLUMNS.concat(GATED_COLUMNS);
+    const columns = visibleColumns();
     const head = document.getElementById('table-head');
     head.innerHTML = columns
       .map((c, i) => {
-        const sortable = ['name', 'voivodeship', 'county', 'commune', 'locality', 'postal_code'].includes(c.key);
-        const lockIcon = !authorized && i >= PUBLIC_COLUMNS.length ? ' <i class="bi bi-lock-fill small"></i>' : '';
+        const lockIcon = !ADMIN_VIEW && !authorized && i >= PUBLIC_COLUMNS.length ? ' <i class="bi bi-lock-fill small"></i>' : '';
         const badge = renderCoverageBadge(c.key, coverage);
-        return `<th${sortable ? ` data-sort="${c.key}" role="button"` : ''}>${c.label}${lockIcon}${badge}</th>`;
+        return `<th${c.sortable ? ` data-sort="${c.key}" role="button"` : ''}>${c.label}${lockIcon}${badge}</th>`;
       })
       .join('');
   }
 
   function renderRow(row, authorized) {
+    if (ADMIN_VIEW) {
+      const cells = adminColumns().map((c) => `<td>${renderCell(c, row) || ''}</td>`);
+      return `<tr>${cells.join('')}</tr>`;
+    }
+
     const cells = PUBLIC_COLUMNS.map((c) => `<td>${renderCell(c, row) || ''}</td>`);
     if (authorized) {
       GATED_COLUMNS.forEach((c) => {
@@ -194,6 +244,11 @@
     for (const key of HIERARCHY) {
       if (state[key]) selection[key] = state[key];
     }
+    // Filtry administratora też zawężają plik - inaczej eksport obejmowałby
+    // szerszy zakres, niż widać w tabeli.
+    for (const [key, value] of Object.entries(state.admin)) {
+      if (value) selection[key] = value;
+    }
     return selection;
   }
 
@@ -213,10 +268,18 @@
     });
   }
 
+  // Odpowiedzi nie wracają w kolejności wysłania - przy szybkim przełączaniu
+  // filtrów wynik starszego zapytania potrafił nadpisać nowszy (tabela
+  // pokazywała wtedy zakres niezgodny z ustawionymi filtrami). Rysujemy więc
+  // tylko odpowiedź na ostatnie wysłane zapytanie.
+  let requestSeq = 0;
+
   async function fetchResults() {
+    const seq = (requestSeq += 1);
     const qs = buildQueryString();
     const res = await fetch(`/api/institutions?${qs}`);
     const data = await res.json();
+    if (seq !== requestSeq) return;
 
     renderTableHead(data.authorized, data.coverage);
     const tbody = document.getElementById('table-body');
@@ -243,12 +306,109 @@
     });
   }
 
+  // --- Filtry administratora -------------------------------------------------
+
+  const adminDebounce = {};
+
+  function adminFilterFields() {
+    return ADMIN_VIEW ? ADMIN_VIEW.filter((f) => f.filter) : [];
+  }
+
+  function adminFilterId(key) {
+    return `af-${key}`;
+  }
+
+  function updateAdminFilterCount() {
+    const badge = document.getElementById('admin-filters-count');
+    if (!badge) return;
+    const active = Object.values(state.admin).filter(Boolean).length;
+    badge.textContent = String(active);
+    badge.classList.toggle('d-none', active === 0);
+  }
+
+  // Kolumny słownikowe dostają select z wartościami z bazy (filtr dopasowuje
+  // dokładnie), pozostałe - pole tekstowe szukające fragmentu.
+  function renderAdminFilters() {
+    const grid = document.getElementById('admin-filters-grid');
+    if (!grid) return;
+
+    grid.innerHTML = adminFilterFields()
+      .map((f) => {
+        const hint = f.filter === 'like' ? ' <span class="text-body-tertiary">(fragment)</span>' : '';
+        const control =
+          f.filter === 'facet'
+            ? `<select class="form-select form-select-sm" id="${adminFilterId(f.key)}" data-admin-facet="${f.key}"><option value="">Wszystkie</option></select>`
+            : `<input type="text" class="form-control form-control-sm" id="${adminFilterId(f.key)}" data-admin-filter="${f.key}" data-admin-mode="${f.filter}">`;
+        return `<div class="col-6 col-md-3">
+            <label class="form-label small text-secondary mb-1" for="${adminFilterId(f.key)}">${escapeHtml(f.label)}${hint}</label>
+            ${control}
+          </div>`;
+      })
+      .join('');
+  }
+
+  async function loadAdminFacet(key) {
+    const select = document.getElementById(adminFilterId(key));
+    if (!select) return;
+    // Słowniki zawężamy bieżącą hierarchią - w wybranym województwie nie ma
+    // sensu proponować form prawnych, których tam nie ma.
+    const params = new URLSearchParams();
+    for (const level of HIERARCHY) {
+      if (state[level]) params.set(level, state[level]);
+    }
+    const res = await fetch(`/api/institutions/facets/${key}?${params.toString()}`);
+    const data = await res.json();
+    const current = state.admin[key] || '';
+    select.innerHTML =
+      '<option value="">Wszystkie</option>' +
+      data.values.map((v) => `<option value="${escapeHtml(v)}">${escapeHtml(toTitleCase(v))}</option>`).join('');
+    select.value = data.values.includes(current) ? current : '';
+    state.admin[key] = select.value;
+  }
+
+  function loadAdminFacets() {
+    return Promise.all(adminFilterFields().filter((f) => f.filter === 'facet').map((f) => loadAdminFacet(f.key)));
+  }
+
+  function attachAdminFilterHandlers() {
+    document.querySelectorAll('[data-admin-facet]').forEach((select) => {
+      select.addEventListener('change', () => {
+        state.admin[select.dataset.adminFacet] = select.value;
+        state.page = 1;
+        updateAdminFilterCount();
+        fetchResults();
+      });
+    });
+
+    document.querySelectorAll('[data-admin-filter]').forEach((input) => {
+      const key = input.dataset.adminFilter;
+      input.addEventListener('input', () => {
+        clearTimeout(adminDebounce[key]);
+        adminDebounce[key] = setTimeout(() => {
+          state.admin[key] = input.value.trim();
+          state.page = 1;
+          updateAdminFilterCount();
+          fetchResults();
+        }, 300);
+      });
+    });
+  }
+
+  function resetAdminFilters() {
+    state.admin = {};
+    document.querySelectorAll('[data-admin-filter]').forEach((input) => { input.value = ''; });
+    document.querySelectorAll('[data-admin-facet]').forEach((select) => { select.value = ''; });
+    updateAdminFilterCount();
+  }
+
   function attachFilterHandlers() {
     HIERARCHY.forEach((level) => {
       document.getElementById(SELECT_IDS[level]).addEventListener('change', async (e) => {
         state[level] = e.target.value;
         state.page = 1;
         await refreshFacetsBelow(level);
+        // Słowniki admina zależą od hierarchii, więc przeładowujemy je razem z nią.
+        if (ADMIN_VIEW) await loadAdminFacets();
         fetchResults();
       });
     });
@@ -267,19 +427,26 @@
       state.q = '';
       state.page = 1;
       document.getElementById('f-search').value = '';
+      resetAdminFilters();
       await loadFacet('voivodeship');
       await refreshFacetsBelow('voivodeship');
+      if (ADMIN_VIEW) await loadAdminFacets();
       fetchResults();
     });
   }
 
   async function init() {
+    if (ADMIN_VIEW) {
+      renderAdminFilters();
+      attachAdminFilterHandlers();
+    }
     attachFilterHandlers();
     attachExportHandlers();
     await loadFacet('voivodeship');
     await loadFacet('county');
     await loadFacet('commune');
     await loadFacet('locality');
+    if (ADMIN_VIEW) await loadAdminFacets();
     await fetchResults();
   }
 

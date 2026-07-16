@@ -3,8 +3,7 @@
 // Maszynowo dostępny jest RIK MKiDN przez REST API Otwartych Danych.
 // Domyślnie moduł czyta fixture (dane testowe); RIK_LIVE=true włącza żywe API.
 const https = require('https');
-const fs = require('fs');
-const path = require('path');
+const { readFixture } = require('./fixtures');
 const { parseCsvToObjects } = require('../lib/csv');
 const {
   padRegon,
@@ -18,7 +17,6 @@ const {
 
 const RIK_API_URL =
   'https://api.dane.gov.pl/resources/34194,rejestr-instytucji-kultury-dla-ktorych-organizatorem-jest-minister-kultury-i-dziedzictwa-narodowego-csv/file';
-const FIXTURE_PATH = path.join(__dirname, '__fixtures__', 'rik.csv');
 
 // CSV z dane.gov.pl jest w Windows-1250, nie w UTF-8 - dlatego zbieramy bufory
 // i dekodujemy na końcu, zamiast ustawiać res.setEncoding('utf8').
@@ -94,12 +92,23 @@ function foldEntries(rows) {
   return entries.filter((e) => (e['Pełna nazwa instytucji kultury'] || '').trim());
 }
 
+function isLive(opts = {}) {
+  return opts.live ?? process.env.RIK_LIVE === 'true';
+}
+
 module.exports = {
   name: 'rik',
 
+  // Jedyne źródło, które fixture'a używa tylko zastępczo: z RIK_LIVE=true czyta
+  // żywe API i wolno mu iść na produkcję. Bez tego czyta dane testowe, więc ETL
+  // pomija je przy NODE_ENV=production (etl/run.js).
+  usesFixtures(opts = {}) {
+    return !isLive(opts);
+  },
+
   async *fetch(opts = {}) {
-    const live = opts.live ?? process.env.RIK_LIVE === 'true';
-    const text = live ? await fetchUrl(RIK_API_URL) : fs.readFileSync(FIXTURE_PATH, 'utf8');
+    const live = isLive(opts);
+    const text = live ? await fetchUrl(RIK_API_URL) : readFixture('rik.csv');
     for (const entry of foldEntries(parseCsvToObjects(text, ';'))) {
       yield entry;
     }

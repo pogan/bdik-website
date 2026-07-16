@@ -2,8 +2,7 @@
 // instytucji kultury (zdecydowana większość zbioru) zwróci praktycznie nic.
 // Przydatne dla NGO-sów działających w kulturze (fundacje, stowarzyszenia).
 // Mock: fixture JSON. Docelowo REST API: https://prs.ms.gov.pl/krs/openApi
-const fs = require('fs');
-const path = require('path');
+const { readJsonFixture } = require('./fixtures');
 const {
   padRegon,
   isValidRegon,
@@ -14,13 +13,15 @@ const {
   normalizedKey,
 } = require('../etl/normalize');
 
-const FIXTURE_PATH = path.join(__dirname, '__fixtures__', 'krs.json');
-
 module.exports = {
   name: 'krs',
 
+  // Źródło w całości oparte na fixture'ach (brak trybu żywego) - ETL pomija
+  // je przy NODE_ENV=production, patrz etl/run.js.
+  fixtureOnly: true,
+
   async *fetch() {
-    const records = JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8'));
+    const records = readJsonFixture('krs.json');
     for (const record of records) {
       yield record;
     }

@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const db = require('../db');
 const { queryInstitutions, coverageCounts, facetValues } = require('../lib/query');
-const { PUBLIC_FIELDS, FULL_FIELDS } = require('../lib/projection');
+const { PUBLIC_FIELDS, ADMIN_FIELDS } = require('../lib/projection');
 
 test('queryInstitutions: anonim - tylko pola publiczne, limit 50', () => {
   const result = queryInstitutions(db, { columns: PUBLIC_FIELDS, isAuthorized: false, pageSize: 999 });
@@ -11,10 +11,10 @@ test('queryInstitutions: anonim - tylko pola publiczne, limit 50', () => {
   assert.deepEqual(Object.keys(result.rows[0]), PUBLIC_FIELDS);
 });
 
-test('queryInstitutions: zalogowany - pełne pola, limit do 500', () => {
-  const result = queryInstitutions(db, { columns: FULL_FIELDS, isAuthorized: true, pageSize: 999 });
+test('queryInstitutions: administrator - wszystkie kolumny, limit do 500', () => {
+  const result = queryInstitutions(db, { columns: ADMIN_FIELDS, isAuthorized: true, pageSize: 999 });
   assert.equal(result.pageSize, 500);
-  assert.deepEqual(Object.keys(result.rows[0]), FULL_FIELDS);
+  assert.deepEqual(Object.keys(result.rows[0]), ADMIN_FIELDS);
 });
 
 test('queryInstitutions: filtr województwa zawęża wyniki i nie miesza województw', () => {

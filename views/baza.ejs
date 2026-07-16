@@ -25,6 +25,7 @@
             <div class="stat"><div class="num">2&nbsp;200+</div><div class="lbl">instytucji kultury</div></div>
             <div class="stat"><div class="num">16</div><div class="lbl">województw</div></div>
             <div class="stat"><div class="num">CSV · XLSX · PDF</div><div class="lbl">formaty eksportu</div></div>
+            <div class="stat"><div class="num"><%= dataUpdatedAt %></div><div class="lbl">ostatnia aktualizacja danych</div></div>
           </div>
           <div class="hero-trust">
             <span class="item"><i class="bi bi-patch-check-fill"></i>Dane z publicznych rejestrów</span>
@@ -56,6 +57,16 @@
             <div class="idx">3</div>
             <div><div class="st-title">Eksportuj</div><p class="st-desc">Pobierz listę z pełnymi danymi kontaktowymi w CSV, XLSX lub PDF — płacisz tylko za to, co wybierzesz.</p></div>
           </div>
+        </div>
+      </div>
+      <div class="step step-sample">
+        <div class="idx">4</div>
+        <div class="step-sample-body">
+          <div>
+            <div class="st-title">Pobierz przykładową listę</div>
+            <p class="st-desc">Zobacz, jak wygląda plik przed zakupem: 16 prawdziwych instytucji — po jednej z każdego województwa, z kompletem danych i wszystkimi kolumnami eksportu.</p>
+          </div>
+          <a class="btn btn-primary" href="/pliki/przykladowa-lista-instytucji-kultury.xlsx" download>Pobierz przykład (XLSX)</a>
         </div>
       </div>
     </div>
@@ -104,6 +115,22 @@
             </div>
           </div>
         </div>
+
+        <!-- Panel filtrów administratora: po jednym polu na każdą filtrowalną
+             kolumnę tabeli institutions. Wypełnia go table.js na podstawie
+             window.BDIK_ADMIN_VIEW; dla pozostałych użytkowników nie ma go w HTML-u. -->
+        <% if (adminView) { %>
+        <div class="mt-3 pt-3 border-top" id="admin-filters">
+          <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                  data-bs-target="#admin-filters-body" aria-expanded="false" aria-controls="admin-filters-body">
+            <i class="bi bi-sliders me-1"></i>Filtry administratora
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis ms-1 d-none" id="admin-filters-count"></span>
+          </button>
+          <div class="collapse mt-3" id="admin-filters-body">
+            <div class="row g-2" id="admin-filters-grid"></div>
+          </div>
+        </div>
+        <% } %>
       </div>
 
     <section class="export-card mb-4" aria-labelledby="export-card-title">
@@ -316,6 +343,9 @@
       publishableKey: <%- JSON.stringify(stripePublishableKey || '') %>,
       configured: <%- JSON.stringify(Boolean(stripeConfigured)) %>,
     };
+    // Null dla wszystkich poza administratorem - table.js renderuje wtedy
+    // dotychczasowy, wąski zestaw kolumn.
+    window.BDIK_ADMIN_VIEW = <%- JSON.stringify(adminView || null) %>;
   </script>
   <script src="/js/checkout.js"></script>
   <script src="/js/table.js"></script>

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { PUBLIC_FIELDS, FULL_FIELDS, isAuthorized, fieldsForRequest } = require('../lib/projection');
+const { PUBLIC_FIELDS, ADMIN_FIELDS, isAuthorized, fieldsForRequest } = require('../lib/projection');
 
 test('isAuthorized: false gdy brak req.user', () => {
   assert.equal(isAuthorized({}), false);
@@ -30,12 +30,12 @@ test('fieldsForRequest: zwykły zalogowany (nie-admin) nie widzi danych płatnyc
   assert.equal(fields.includes('regon'), false);
 });
 
-test('fieldsForRequest: administrator dostaje pełny zestaw', () => {
+test('fieldsForRequest: administrator dostaje wszystkie kolumny tabeli', () => {
   const byRole = fieldsForRequest({ user: { is_active: 1, role: 'admin' } });
-  assert.deepEqual(byRole, FULL_FIELDS);
+  assert.deepEqual(byRole, ADMIN_FIELDS);
   assert.ok(byRole.includes('email'));
   assert.ok(byRole.includes('phone'));
 
   const byEmail = fieldsForRequest({ user: { is_active: 1, role: 'user', email: 'karol.konop@gmail.com' } });
-  assert.deepEqual(byEmail, FULL_FIELDS);
+  assert.deepEqual(byEmail, ADMIN_FIELDS);
 });

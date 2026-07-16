@@ -197,6 +197,22 @@ a:hover { color: var(--accent-strong); }
 .step .st-desc { color: var(--muted); font-size: .86rem; line-height: 1.45; margin: 0; }
 @media (min-width: 768px) { .step + .step { border-left: 1px solid var(--line); padding-left: 1.75rem; } }
 
+/* Krok 4 - próbka pliku. Pas na całą szerokość pod trójką kroków, wyróżniony
+   tłem akcentu, bo to jedyne miejsce, gdzie widać zawartość eksportu bez zakupu. */
+.step-sample {
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.4rem;
+}
+.step-sample .idx { background: var(--accent); color: #fff; }
+.step-sample-body {
+  display: flex; flex-wrap: wrap; gap: .85rem 1.5rem;
+  align-items: center; justify-content: space-between; flex: 1;
+}
+.step-sample .st-desc { color: var(--ink-soft); max-width: 60ch; }
+
 /* Sekcja narzędzia -------------------------------------------------------- */
 .tool-header h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -.02em; color: var(--ink); margin-bottom: .15rem; }
 #result-count { color: var(--muted); }

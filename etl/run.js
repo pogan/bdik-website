@@ -128,13 +128,35 @@ async function runSource(source) {
   return { source: source.name, inserted, updated, skippedNoKey, skippedNoRegon, skippedOptout };
 }
 
+// Czy dane tego źródła pochodzą z fixture'a (danych testowych). Źródła-mocki
+// deklarują to na stałe (fixtureOnly), RIK zależnie od RIK_LIVE.
+function usesFixtures(source) {
+  if (typeof source.usesFixtures === 'function') return source.usesFixtures();
+  return Boolean(source.fixtureOnly);
+}
+
+// Na produkcji do bazy wpuszczamy wyłącznie źródła z realnymi danymi. Fixture'y
+// (example-fixture-*.pl, wymyślone REGON-y) trafiłyby inaczej do eksportu, za
+// który klient płaci. Poza produkcją zachowanie się nie zmienia - mocki są tam
+// jedynym sposobem, żeby przećwiczyć ścieżkę scalania wielu źródeł.
+function selectSources(sources) {
+  if (process.env.NODE_ENV !== 'production') return { runnable: sources, skipped: [] };
+  const runnable = sources.filter((s) => !usesFixtures(s));
+  return { runnable, skipped: sources.filter((s) => usesFixtures(s)) };
+}
+
 async function main() {
   // Kolejność nie ma znaczenia dla poprawności (mergeRecord respektuje
   // priorytet niezależnie od kolejności przebiegu), ale seed jako jedyne
   // realne źródło idzie pierwsze, żeby log czytał się w naturalnej kolejności.
-  const sources = [csvSeed, ceidg, krs, rik, gus];
+  const { runnable, skipped } = selectSources([csvSeed, ceidg, krs, rik, gus]);
 
-  for (const source of sources) {
+  for (const source of skipped) {
+    const hint = source.name === 'rik' ? ' (ustaw RIK_LIVE=true, żeby czytać żywe API)' : '';
+    console.log(`ETL pomija: ${source.name} - dane testowe (fixture), a NODE_ENV=production${hint}`);
+  }
+
+  for (const source of runnable) {
     console.log(`ETL start: ${source.name}`);
     const stats = await runSource(source);
     console.log('ETL zakończony:', stats);
@@ -153,4 +175,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { runSource, main };
+module.exports = { runSource, main, selectSources, usesFixtures };

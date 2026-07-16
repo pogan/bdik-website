@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { queryInstitutions, coverageCounts, facetValues } = require('../lib/query');
+const { queryInstitutions, coverageCounts, facetValues, FILTERABLE_COLUMNS, ADMIN_FILTERABLE_COLUMNS } = require('../lib/query');
 const { isAdmin, fieldsForRequest } = require('../lib/projection');
 const { normalizeSelection, EXPORT_FORMATS } = require('../lib/orders');
 const { streamExport } = require('../lib/exportRun');
@@ -17,15 +17,17 @@ function requireAdmin(req, res, next) {
   return next();
 }
 
-function parseFilters(query) {
-  return {
-    voivodeship: query.voivodeship || '',
-    county: query.county || '',
-    commune: query.commune || '',
-    locality: query.locality || '',
-    postal_code: query.postal_code || '',
-    legal_form: query.legal_form || '',
-  };
+// Zwykły użytkownik filtruje po sześciu kolumnach lokalizacyjnych; administrator
+// po każdej kolumnie tabeli. Zestaw kluczy jest tu twardo ograniczony, więc
+// dopisanie dowolnego parametru do URL-a nie odblokuje filtra spoza listy.
+function parseFilters(query, req) {
+  const allowed = req && isAdmin(req) ? ADMIN_FILTERABLE_COLUMNS : FILTERABLE_COLUMNS;
+  const filters = {};
+  for (const col of allowed) {
+    const value = query[col];
+    if (typeof value === 'string' && value.trim()) filters[col] = value.trim();
+  }
+  return filters;
 }
 
 router.get('/institutions', (req, res) => {
@@ -33,7 +35,7 @@ router.get('/institutions', (req, res) => {
   // Pełne dane (kontakt, REGON) widzi tylko administrator - dla wszystkich
   // innych (także zwykłych zalogowanych) komórki pozostają zablurowane.
   const authorized = isAdmin(req);
-  const filters = parseFilters(req.query);
+  const filters = parseFilters(req.query, req);
   const search = req.query.q || '';
 
   const result = queryInstitutions(db, {
@@ -62,10 +64,17 @@ router.get('/institutions', (req, res) => {
   });
 });
 
+const PUBLIC_FACET_LEVELS = ['voivodeship', 'county', 'commune', 'locality'];
+
 router.get('/institutions/facets/:level', (req, res) => {
   const level = req.params.level;
-  const values = facetValues(db, level, parseFilters(req.query));
-  res.json({ level, values });
+  // Słowniki kolumn administracyjnych (forma prawna, źródło, PKD) są częścią
+  // widoku admina - dla pozostałych zostają tylko cztery poziomy hierarchii.
+  if (!PUBLIC_FACET_LEVELS.includes(level) && !isAdmin(req)) {
+    return res.json({ level, values: [] });
+  }
+  const values = facetValues(db, level, parseFilters(req.query, req));
+  return res.json({ level, values });
 });
 
 router.get('/institutions/export', requireAdmin, async (req, res) => {
@@ -74,7 +83,7 @@ router.get('/institutions/export', requireAdmin, async (req, res) => {
     return res.status(400).json({ error: 'Nieobsługiwany format. Dozwolone: csv, xlsx, pdf.' });
   }
 
-  const selection = normalizeSelection({ ...parseFilters(req.query), q: req.query.q, sort: req.query.sort, order: req.query.order });
+  const selection = normalizeSelection({ ...parseFilters(req.query, req), q: req.query.q, sort: req.query.sort, order: req.query.order });
 
   return streamExport(res, { format, selection, filename: 'instytucje-kultury' });
 });
