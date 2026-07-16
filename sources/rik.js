@@ -20,6 +20,8 @@ const RIK_API_URL =
   'https://api.dane.gov.pl/resources/34194,rejestr-instytucji-kultury-dla-ktorych-organizatorem-jest-minister-kultury-i-dziedzictwa-narodowego-csv/file';
 const FIXTURE_PATH = path.join(__dirname, '__fixtures__', 'rik.csv');
 
+// CSV z dane.gov.pl jest w Windows-1250, nie w UTF-8 - dlatego zbieramy bufory
+// i dekodujemy na końcu, zamiast ustawiać res.setEncoding('utf8').
 function fetchUrl(url) {
   return new Promise((resolve, reject) => {
     https
@@ -32,13 +34,64 @@ function fetchUrl(url) {
           reject(new Error(`RIK API zwróciło HTTP ${res.statusCode}`));
           return;
         }
-        let data = '';
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => { data += chunk; });
-        res.on('end', () => resolve(data));
+        const chunks = [];
+        res.on('data', (chunk) => { chunks.push(chunk); });
+        res.on('end', () => resolve(decodeCp1250(Buffer.concat(chunks))));
       })
       .on('error', reject);
   });
+}
+
+function decodeCp1250(buf) {
+  return new TextDecoder('windows-1250').decode(buf);
+}
+
+// RIK podaje siedzibę jako jedno pole tekstowe ("ul. Jasna 5 00-950 Warszawa").
+// Kod pocztowy jest jedynym pewnym punktem zaczepienia: co przed nim to ulica
+// z numerem, co po nim to miejscowość.
+function parseSeat(seat) {
+  const text = (seat || '').trim();
+  // W rejestrze zdarza się literówka "00=641" zamiast "00-641".
+  const match = text.match(/(\d{2})[-=](\d{3})/);
+  if (!match) return { street: text, building_no: '', postal_code: '', locality: '' };
+
+  const postal = `${match[1]}-${match[2]}`;
+  const before = text.slice(0, match.index).trim();
+  const locality = text.slice(match.index + match[0].length).trim();
+
+  const building = before.match(/\s(\d+[A-Za-z]?(?:\/\d+[A-Za-z]?)*)$/);
+  return {
+    street: building ? before.slice(0, building.index).trim() : before,
+    building_no: building ? building[1] : '',
+    postal_code: postal,
+    locality,
+  };
+}
+
+// Jedna instytucja to w RIK kilka wierszy: wiersz z numerem wpisu zakłada
+// wpis, kolejne (bez numeru) to zmiany - nadanie statutu, przeniesienie
+// siedziby, zmiana nazwy. Liczy się stan bieżący, więc zwijamy każdy wpis do
+// jednego rekordu, w którym późniejsza niepusta wartość nadpisuje wcześniejszą.
+// Bez tego zmiana nazwy trafiłaby do bazy jako druga, osobna instytucja.
+const ENTRY_NO = 'Numer wpisu do rejestru';
+
+function foldEntries(rows) {
+  const entries = [];
+  let current = null;
+
+  for (const row of rows) {
+    if ((row[ENTRY_NO] || '').trim()) {
+      current = { ...row };
+      entries.push(current);
+      continue;
+    }
+    if (!current) continue;
+    for (const [key, value] of Object.entries(row)) {
+      if (key !== ENTRY_NO && (value || '').trim()) current[key] = value;
+    }
+  }
+
+  return entries.filter((e) => (e['Pełna nazwa instytucji kultury'] || '').trim());
 }
 
 module.exports = {
@@ -47,32 +100,35 @@ module.exports = {
   async *fetch(opts = {}) {
     const live = opts.live ?? process.env.RIK_LIVE === 'true';
     const text = live ? await fetchUrl(RIK_API_URL) : fs.readFileSync(FIXTURE_PATH, 'utf8');
-    for (const row of parseCsvToObjects(text)) {
-      yield row;
+    for (const entry of foldEntries(parseCsvToObjects(text, ';'))) {
+      yield entry;
     }
   },
 
+  // RIK MKiDN nie publikuje REGON-u, NIP-u ani danych kontaktowych - stąd puste
+  // pola poniżej. Wnosi nazwę i adres, resztę dokłada GUS (wyższy priorytet).
   toCanonical(raw) {
     const regon = padRegon(raw['REGON'] || raw['Regon'] || '');
-    const name = raw['Nazwa instytucji'] || raw['Nazwa'] || '';
+    const name = raw['Pełna nazwa instytucji kultury'] || '';
+    const seat = parseSeat(raw['Siedziba i adres instytucji kultury']);
     return {
       regon,
       regon_valid: isValidRegon(regon) ? 1 : 0,
       nip: (raw['NIP'] || '').trim(),
-      source_ref: (raw['Nr RIK'] || raw['Numer w rejestrze'] || '').trim(),
+      source_ref: (raw['Numer wpisu do rejestru'] || '').trim(),
       krs: '',
       name: normalizeName(name),
       name_normalized: normalizedKey(name),
       legal_form: 'PAŃSTWOWA INSTYTUCJA KULTURY',
-      voivodeship: normalizeName(raw['Województwo']),
+      voivodeship: '',
       county: '',
       commune: '',
-      locality: normalizeName(raw['Miejscowość']),
-      street: normalizeName(raw['Ulica']),
-      building_no: (raw['Nr domu'] || '').trim(),
+      locality: normalizeName(seat.locality),
+      street: normalizeName(seat.street),
+      building_no: seat.building_no,
       unit_no: '',
-      postal_code: (raw['Kod pocztowy'] || '').trim(),
-      post_office: normalizeName(raw['Miejscowość']),
+      postal_code: seat.postal_code,
+      post_office: normalizeName(seat.locality),
       phone: normalizePhone(raw['Telefon']),
       fax: '',
       email: normalizeEmail(raw['E-mail'] || raw['Email']),

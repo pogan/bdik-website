@@ -1,4 +1,5 @@
-Nazwa instytucji,REGON,NIP,Nr RIK,Województwo,Miejscowość,Ulica,Nr domu,Kod pocztowy,Telefon,E-mail,WWW
-Testowy Teatr Narodowy w Warszawie,100000014,5260000001,RIK/1/2001,MAZOWIECKIE,WARSZAWA,UL. TESTOWA,1,00-001,+48221234567,teatr@example-fixture.pl,www.example-fixture-teatr.pl
-Testowe Muzeum Regionalne w Krakowie,100000020,6760000002,RIK/2/1998,MAŁOPOLSKIE,KRAKÓW,UL. PRZYKŁADOWA,5,31-000,+48123456789,muzeum@example-fixture.pl,www.example-fixture-muzeum.pl
-Testowa Filharmonia im. Jana Kowalskiego,100000037,7770000003,RIK/3/2005,ŚLĄSKIE,KATOWICE,UL. WZOROWA,10,40-000,+48322345678,filharmonia@example-fixture.pl,
+Numer wpisu do rejestru;Data wpisu do rejestru oraz daty kolejnych wpisów;Pełna nazwa instytucji kultury;Skrócona nazwa instytucji kultury;Siedziba i adres instytucji kultury;Oznaczenie organizatora instytucji kultury;Oznaczenie podmiotu współprowadzącego instytucję kultury;Akt o utworzeniu instytucji kultury;Akt o nadaniu statutu instytucji kultury
+RIK 1/2001;2001.03.12;Testowy Teatr Narodowy w Warszawie;;ul. Testowa 1 00-001 Warszawa;Minister Kultury i Dziedzictwa Narodowego;;Zarządzenie testowe o utworzeniu;Zarządzenie testowe o nadaniu statutu
+;2005.06.30;;;;;;;Zarządzenie testowe zmieniające statut Testowego Teatru Narodowego w Warszawie
+RIK 2/1998;1998.11.05;Testowe Muzeum Regionalne w Krakowie;;Rynek Przykładowy 5/7 31-000 Kraków;Minister Kultury i Dziedzictwa Narodowego;;Zarządzenie testowe o utworzeniu;Zarządzenie testowe o nadaniu statutu
+RIK 3/2005;2005.09.01;Testowa Filharmonia im. Jana Kowalskiego;;Wzorowa 10 40-000 Katowice;Minister Kultury i Dziedzictwa Narodowego;;Zarządzenie testowe o utworzeniu;

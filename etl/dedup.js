@@ -5,9 +5,13 @@ const SOURCE_PRIORITY = { gus: 4, rik: 3, krs: 2, ceidg: 1, seed: 0 };
 
 // Klucz deduplikacji: REGON, gdy dostępny; w przeciwnym razie
 // nazwa znormalizowana + kod pocztowy + numer domu.
+// Bez REGON-u i bez nazwy klucza nie ma - inaczej wszystkie takie rekordy
+// scaliłyby się w jeden pusty wiersz (fallback:||), widoczny potem w /baza.
 function dedupKey(record) {
   if (record.regon) return `regon:${record.regon}`;
-  return `fallback:${normalizedKey(record.name)}|${record.postal_code || ''}|${record.building_no || ''}`;
+  const name = normalizedKey(record.name);
+  if (!name) return '';
+  return `fallback:${name}|${record.postal_code || ''}|${record.building_no || ''}`;
 }
 
 // Scala nowy rekord z istniejącym wg priorytetu źródeł: pole ze źródła
