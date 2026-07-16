@@ -201,7 +201,53 @@ a:hover { color: var(--accent-strong); }
 .tool-header h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -.02em; color: var(--ink); margin-bottom: .15rem; }
 #result-count { color: var(--muted); }
 
-.export-hint { color: var(--muted); }
+/* Karta eksportu ---------------------------------------------------------- */
+.export-card {
+  background: linear-gradient(180deg, var(--accent-soft), var(--surface) 70%);
+  border: 1px solid #d9d5fb;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: 1.25rem 1.25rem 1.1rem;
+}
+.export-card-head { display: flex; align-items: center; gap: .85rem; margin-bottom: 1rem; }
+.export-card-icon {
+  flex: 0 0 auto;
+  width: 42px; height: 42px;
+  display: grid; place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--accent); color: #fff;
+  font-size: 1.15rem;
+  box-shadow: 0 6px 14px -6px var(--accent);
+}
+.export-card-title { font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; color: var(--ink); margin-bottom: .1rem; }
+.export-card-sub { color: var(--muted); font-size: .87rem; }
+
+.export-card-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.export-btn {
+  flex: 1 1 0; min-width: 120px;
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .7rem 1.1rem;
+  font-weight: 650; font-size: .95rem;
+  color: #fff; background: var(--accent);
+  border: 1px solid var(--accent-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 18px -10px var(--accent);
+  transition: transform .12s ease, background-color .12s ease, box-shadow .12s ease;
+}
+.export-btn i { font-size: 1.05rem; }
+.export-btn:hover:not(:disabled),
+.export-btn:focus-visible {
+  color: #fff; background: var(--accent-strong);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px -10px var(--accent);
+}
+.export-btn:active:not(:disabled) { transform: translateY(0); }
+.export-btn:disabled {
+  background: var(--surface-2); color: var(--muted-2);
+  border-color: var(--line-strong); box-shadow: none; opacity: 1;
+}
+
+.export-hint { color: var(--muted); margin-top: .8rem; }
 .export-hint i { color: var(--accent); }
 
 /* Karta filtrów ----------------------------------------------------------- */
@@ -275,6 +321,22 @@ a:hover { color: var(--accent-strong); }
 .modal-body { padding: 1.35rem; }
 .checkout-summary { background: linear-gradient(180deg, var(--surface-2), var(--surface)); border: 1px solid var(--line) !important; border-radius: var(--radius) !important; }
 .checkout-summary .grand { color: var(--ink); font-weight: 700; }
+/* Informacja o fakturze VAT (modal eksportu) */
+.invoice-note {
+  display: flex;
+  gap: .7rem;
+  padding: .85rem 1rem;
+  background: var(--surface-2);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: .85rem;
+  line-height: 1.5;
+}
+.invoice-note-icon { flex: 0 0 auto; font-size: 1.1rem; color: var(--accent); line-height: 1.35; }
+.invoice-note-title { font-weight: 650; color: var(--ink); margin-bottom: .15rem; }
+.invoice-note a { color: var(--accent-ink); font-weight: 600; }
+
 .alert-info { --bs-alert-bg: var(--accent-soft); --bs-alert-border-color: color-mix(in srgb, var(--accent) 22%, transparent); --bs-alert-color: var(--accent-ink); border-radius: var(--radius-sm); }
 .alert-danger { border-radius: var(--radius-sm); }
 
