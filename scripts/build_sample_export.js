@@ -3,14 +3,18 @@
 // eksport płatny, więc struktura kolumn i nota licencyjna są identyczne.
 //
 // Uruchomienie po aktualizacji bazy: node scripts/build_sample_export.js
+//
+// Uruchom ponownie także po zmianie danych sprzedawcy w .env - nota licencyjna
+// z nazwą sprzedawcy jest wpieczona w plik w momencie generowania.
 
+require('dotenv').config(); // bez tego nota licencyjna bierze domyślnego sprzedawcę z kodu, nie z .env
 const fs = require('fs');
 const path = require('path');
 const db = require('../db');
-const { columnsFor, EXPORT_FIELDS_FULL } = require('../lib/fieldLabels');
-const { streamXlsx } = require('../lib/exportFormats');
+const { columnsFor, EXPORT_FIELDS_FULL, EXPORT_FIELDS_PDF } = require('../lib/fieldLabels');
+const { streamPdf } = require('../lib/exportFormats');
 
-const OUT_PATH = path.join(__dirname, '..', 'public', 'pliki', 'przykladowa-lista-instytucji-kultury.xlsx');
+const OUT_PATH = path.join(__dirname, '..', 'public', 'pliki', 'przykladowa-lista-instytucji-kultury.pdf');
 
 // Do próbki bierzemy wyłącznie rekordy kompletne (kontakt + adres + NIP/REGON),
 // po jednym na województwo - próbka ma pokazywać maksimum tego, co zawiera baza.
@@ -36,7 +40,7 @@ async function main() {
     const out = fs.createWriteStream(OUT_PATH);
     out.on('error', reject);
     out.on('finish', resolve);
-    Promise.resolve(streamXlsx(out, rows, columnsFor(EXPORT_FIELDS_FULL))).catch(reject);
+    Promise.resolve(streamPdf(out, rows, columnsFor(EXPORT_FIELDS_PDF))).catch(reject);
   });
 
   console.log(`Zapisano ${rows.length} rekordów do ${OUT_PATH}`);

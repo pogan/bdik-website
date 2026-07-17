@@ -23,6 +23,7 @@
   --accent-soft: #eef0fe;  /* delikatne tło akcentu */
 
   --success: #16a34a;
+  --success-soft: #eaf7ee;  /* delikatne tło zieleni - krok z próbką pliku */
   --danger: #dc2626;
 
   --radius: 14px;
@@ -198,20 +199,32 @@ a:hover { color: var(--accent-strong); }
 @media (min-width: 768px) { .step + .step { border-left: 1px solid var(--line); padding-left: 1.75rem; } }
 
 /* Krok 4 - próbka pliku. Pas na całą szerokość pod trójką kroków, wyróżniony
-   tłem akcentu, bo to jedyne miejsce, gdzie widać zawartość eksportu bez zakupu. */
+   zielenią: to jedyne miejsce, gdzie widać zawartość eksportu bez zakupu, a
+   zieleń odróżnia darmową próbkę od indygowych elementów płatnego eksportu. */
 .step-sample {
-  background: var(--accent-soft);
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  background: var(--success-soft);
+  border: 1px solid color-mix(in srgb, var(--success) 22%, transparent);
   border-radius: var(--radius);
   padding: 1.1rem 1.25rem;
   margin-bottom: 1.4rem;
 }
-.step-sample .idx { background: var(--accent); color: #fff; }
+.step-sample .idx { background: var(--success); color: #fff; }
 .step-sample-body {
   display: flex; flex-wrap: wrap; gap: .85rem 1.5rem;
   align-items: center; justify-content: space-between; flex: 1;
 }
 .step-sample .st-desc { color: var(--ink-soft); max-width: 60ch; }
+/* Przycisk idzie za tłem kroku - indygowe CTA na zielonym pasie gryzłoby się
+   z resztą i sugerowało płatny eksport. */
+.step-sample .btn-primary {
+  background: var(--success);
+  border-color: var(--success);
+}
+.step-sample .btn-primary:hover,
+.step-sample .btn-primary:focus-visible {
+  background: color-mix(in srgb, var(--success) 88%, #000);
+  border-color: color-mix(in srgb, var(--success) 88%, #000);
+}
 
 /* Sekcja narzędzia -------------------------------------------------------- */
 .tool-header h2 { font-size: 1.4rem; font-weight: 700; letter-spacing: -.02em; color: var(--ink); margin-bottom: .15rem; }
