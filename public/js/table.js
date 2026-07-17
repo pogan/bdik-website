@@ -85,6 +85,22 @@
     });
   }
 
+  // Statystyki stopki (widoczne tylko dla admina). sendBeacon zamiast fetch,
+  // bo kliknięcie w "Pobierz przykład" od razu startuje pobieranie pliku.
+  function track(name) {
+    if (navigator.sendBeacon) navigator.sendBeacon(`/api/events/${name}`);
+    else fetch(`/api/events/${name}`, { method: 'POST', keepalive: true });
+  }
+
+  // Zmiana filtra liczy osoby, nie kliknięcia - jedno zgłoszenie na wizytę
+  // wystarczy, żeby nie strzelać przy każdym wciśniętym klawiszu w szukajce.
+  let filterTracked = false;
+  function trackFilterChange() {
+    if (filterTracked) return;
+    filterTracked = true;
+    track('filter_change');
+  }
+
   function buildQueryString(extra = {}) {
     const params = new URLSearchParams();
     for (const key of HIERARCHY) {
@@ -263,6 +279,7 @@
   function attachExportHandlers() {
     document.querySelectorAll('#export-buttons button[data-format]').forEach((btn) => {
       btn.addEventListener('click', () => {
+        track('export_modal');
         window.openCheckout(exportSelection(btn.dataset.format));
       });
     });
@@ -404,6 +421,7 @@
   function attachFilterHandlers() {
     HIERARCHY.forEach((level) => {
       document.getElementById(SELECT_IDS[level]).addEventListener('change', async (e) => {
+        trackFilterChange();
         state[level] = e.target.value;
         state.page = 1;
         await refreshFacetsBelow(level);
@@ -414,6 +432,7 @@
     });
 
     document.getElementById('f-search').addEventListener('input', (e) => {
+      trackFilterChange();
       clearTimeout(searchDebounce);
       searchDebounce = setTimeout(() => {
         state.q = e.target.value;
@@ -435,7 +454,13 @@
     });
   }
 
+  function attachSampleHandler() {
+    const btn = document.getElementById('sample-download');
+    if (btn) btn.addEventListener('click', () => track('sample_download'));
+  }
+
   async function init() {
+    attachSampleHandler();
     if (ADMIN_VIEW) {
       renderAdminFilters();
       attachAdminFilterHandlers();

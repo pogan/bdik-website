@@ -168,6 +168,18 @@ CREATE TABLE IF NOT EXISTS visits (
   last_seen TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Zdarzenia w statystykach stopki (widocznych tylko dla administratora).
+-- Ten sam hash IP co w visits: jeden wiersz na (osoba, zdarzenie), więc
+-- COUNT(*) = liczba osób, SUM(hits) = liczba wszystkich zdarzeń.
+CREATE TABLE IF NOT EXISTS events (
+  ip_hash TEXT NOT NULL,
+  name TEXT NOT NULL,
+  hits INTEGER NOT NULL DEFAULT 1,
+  first_seen TEXT NOT NULL DEFAULT (datetime('now')),
+  last_seen TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (ip_hash, name)
+);
+
 -- Sesje (express-session) - patrz lib/sqliteSessionStore.js. Ten sam silnik
 -- (better-sqlite3) co reszta bazy, żeby nie mieszać dwóch sterowników SQLite.
 CREATE TABLE IF NOT EXISTS sessions (

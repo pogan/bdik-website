@@ -15,7 +15,7 @@ const { seller } = require('./lib/sellerInfo');
 const { lastDataUpdate } = require('./lib/dataFreshness');
 const { TERMS_VERSION, isKnownTermsVersion, termsViewName } = require('./lib/legal');
 const { baseUrl, canonicalUrl } = require('./lib/seo');
-const { recordVisit, visitCount } = require('./lib/visits');
+const { recordVisit, visitCount, eventStats } = require('./lib/visits');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const paymentRoutes = require('./routes/payments');
@@ -77,19 +77,26 @@ app.use((req, res, next) => {
   next();
 });
 
-// Licznik odwiedzin w stopce: tylko realne wejścia na strony (GET, poza API,
-// panelem admina i logowaniem), żeby wywołania AJAX-owe i callbacki OAuth nie
-// zawyżały liczby.
+// Licznik odwiedzin: tylko realne wejścia na strony (GET, poza API, panelem
+// admina i logowaniem), żeby wywołania AJAX-owe i callbacki OAuth nie zawyżały
+// liczby. Własne wejścia admina też pomijamy - inaczej statystyka mierzyłaby
+// głównie pracę nad serwisem (to samo dla zdarzeń, patrz routes/api.js).
+// Tabelka jest w stopce widoczna wyłącznie dla admina, więc dla pozostałych
+// nie liczymy jej wcale.
 app.use((req, res, next) => {
   if (
     req.method === 'GET' &&
+    !res.locals.isAdmin &&
+    req.path !== '/healthz' &&
     !req.path.startsWith('/api') &&
     !req.path.startsWith('/admin') &&
     !req.path.startsWith('/auth')
   ) {
     recordVisit(req.ip);
   }
-  res.locals.visitCount = visitCount();
+  res.locals.siteStats = res.locals.isAdmin
+    ? [{ label: 'Liczba odwiedzin', value: visitCount() }, ...eventStats()]
+    : null;
   next();
 });
 
