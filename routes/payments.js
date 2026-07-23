@@ -215,6 +215,9 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireConsents, r
       selection,
       rowCount,
       billedCount,
+      // Własne zakupy testowe administratora nie są sprzedażą - /admin/stats
+      // je pomija (spójnie z pomijaniem jego wizyt i zdarzeń).
+      createdByAdmin: isAdmin(req),
       amount: net,
       currency: CURRENCY,
       // Wersja regulaminu zaakceptowana przy tym zakupie (zgody potwierdzone

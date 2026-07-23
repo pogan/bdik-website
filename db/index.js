@@ -39,6 +39,10 @@ ensureColumn('orders', 'billing_address', 'TEXT');
 // rekordy z kontaktem"; NULL w zamówieniach sprzed tej zmiany.
 ensureColumn('orders', 'billed_count', 'INTEGER');
 
+// Zamówienia składane przez zalogowanego administratora (testy własne) - do
+// pominięcia w statystykach sprzedaży (lib/stats.js).
+ensureColumn('orders', 'created_by_admin', 'INTEGER NOT NULL DEFAULT 0');
+
 // Źródło pierwszej wizyty (referrer/UTM/strona wejścia) - patrz lib/visits.js.
 ensureColumn('visits', 'referrer', 'TEXT');
 ensureColumn('visits', 'utm_source', 'TEXT');

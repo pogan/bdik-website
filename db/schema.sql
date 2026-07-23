@@ -128,6 +128,9 @@ CREATE TABLE IF NOT EXISTS orders (
   -- Rekordy PŁATNE (z co najmniej jednym kanałem kontaktu) z chwili zakupu;
   -- row_count to całość pliku, różnica trafia do klienta gratis.
   billed_count INTEGER,
+  -- 1 = zamówienie złożone przez zalogowanego administratora (testy własne) -
+  -- panel /admin/stats pomija takie zamówienia, panel zamówień pokazuje wszystkie.
+  created_by_admin INTEGER NOT NULL DEFAULT 0,
   amount INTEGER NOT NULL,
   currency TEXT NOT NULL DEFAULT 'pln',
   status TEXT NOT NULL DEFAULT 'pending',

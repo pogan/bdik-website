@@ -11,7 +11,7 @@
     "etl": "node etl/run.js",
     "enrich": "node scripts/enrich_contacts.js",
     "vendor": "node scripts/vendor.js",
-    "test": "node --test"
+    "test": "node scripts/test-db.js && DB_PATH=data/test.sqlite node --test"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
