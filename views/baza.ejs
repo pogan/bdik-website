@@ -241,6 +241,28 @@
     </nav>
   </main>
 
+  <section class="faq" id="faq">
+    <div class="container">
+      <h2 class="pricing-title mb-1">Najczęstsze pytania</h2>
+      <p class="pricing-lead mb-4">Wszystko, co warto wiedzieć przed zakupem eksportu.</p>
+      <div class="accordion" id="faq-accordion">
+        <% faq.forEach((item, i) => { %>
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                      data-bs-target="#faq-item-<%= i %>" aria-expanded="false" aria-controls="faq-item-<%= i %>">
+                <%= item.q %>
+              </button>
+            </h3>
+            <div id="faq-item-<%= i %>" class="accordion-collapse collapse" data-bs-parent="#faq-accordion">
+              <div class="accordion-body"><%= item.a %></div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </section>
+
   <div class="modal fade" id="payment-modal" tabindex="-1" aria-labelledby="payment-modal-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
       <div class="modal-content">
@@ -322,10 +344,10 @@
           <div id="checkout-consents">
             <div class="alert alert-info small mb-3">
               <i class="bi bi-info-circle me-1"></i>Dane pochodzą z publicznych rejestrów (m.in. KRS)
-              i ręcznych uzupełnień. Nie gwarantujemy ich kompletności ani zgodności ze stanem
-              faktycznym — część rekordów może nie mieć telefonu, e-maila lub WWW (widać to przy
-              filtrowaniu). Zakup podlega <a href="/regulamin" target="_blank" rel="noopener">licencji</a>:
-              wyłącznie do użytku własnego, bez edycji, upubliczniania i odsprzedaży.
+              i ręcznych uzupełnień — pojedyncze rekordy mogą mieć braki, dlatego za rekordy bez
+              danych kontaktowych nie płacisz. Kupujesz licencję do użytku własnego — szczegóły w
+              <a href="/regulamin" target="_blank" rel="noopener">Regulaminie</a> i
+              <a href="#faq" data-bs-dismiss="modal">FAQ</a>.
             </div>
             <div class="form-check mb-2">
               <input class="form-check-input" type="checkbox" id="consent-terms">
@@ -337,9 +359,9 @@
             <div class="form-check mb-3">
               <input class="form-check-input" type="checkbox" id="consent-withdrawal">
               <label class="form-check-label small" for="consent-withdrawal">
-                Żądam dostarczenia treści cyfrowej (pliku) niezwłocznie po opłaceniu i przyjmuję do
-                wiadomości, że z chwilą rozpoczęcia pobierania <strong>tracę prawo odstąpienia</strong>
-                od umowy.
+                Chcę otrzymać plik od razu po opłaceniu i przyjmuję do wiadomości, że z chwilą
+                rozpoczęcia pobierania tracę prawo odstąpienia od umowy (standardowa zasada przy
+                zakupie treści cyfrowych, np. e-booków).
               </label>
             </div>
             <div class="d-grid">

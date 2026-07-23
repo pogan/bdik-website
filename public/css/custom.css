@@ -299,6 +299,13 @@ a:hover { color: var(--accent-strong); }
   background: var(--surface); box-shadow: var(--shadow-sm);
   padding: 1.1rem 1.15rem; height: 100%;
 }
+/* Sekcja FAQ --------------------------------------------------------------- */
+.faq { border-top: 1px solid var(--line); background: var(--surface); padding: 2.75rem 0; }
+.faq .accordion { max-width: 52rem; }
+.faq .accordion-button { font-weight: 600; font-size: .95rem; color: var(--ink); }
+.faq .accordion-button:not(.collapsed) { background: var(--accent-soft); color: var(--accent-ink); box-shadow: none; }
+.faq .accordion-body { color: var(--muted); font-size: .9rem; line-height: 1.55; }
+
 .pricing-example .pe-label { font-size: .82rem; font-weight: 650; color: var(--muted); }
 .pricing-example .pe-price { font-size: 1.45rem; font-weight: 700; letter-spacing: -.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
 .pricing-example .pe-note { font-size: .8rem; color: var(--muted-2); }

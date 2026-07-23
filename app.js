@@ -186,13 +186,70 @@ function cennikView() {
   };
 }
 
+// FAQ zdefiniowane raz: te same pytania renderują akordeon na stronie bazy
+// oraz dane strukturalne FAQPage (schema.org) - treść nie może się rozjechać.
+function faqView(dataUpdatedAt) {
+  return [
+    {
+      q: 'Skąd pochodzą dane i jak często są aktualizowane?',
+      a:
+        'Dane pochodzą z publicznych rejestrów (m.in. KRS, REGON/GUS i rejestry instytucji kultury) ' +
+        'i są dodatkowo ręcznie uzupełniane o telefony, adresy e-mail i strony WWW ze stron samych ' +
+        `instytucji. Ostatnia aktualizacja bazy: ${dataUpdatedAt}.`,
+    },
+    {
+      q: 'Co dokładnie zawiera kupiony plik?',
+      a:
+        'Każdy rekord to jedna instytucja: nazwa, pełny adres (województwo, powiat, gmina, miejscowość, ' +
+        'ulica, kod pocztowy), telefon, e-mail, strona WWW i REGON. Eksport CSV i XLSX zawiera dodatkowo ' +
+        'm.in. NIP, formę prawną, kod PKD i daty rozpoczęcia działalności. Przed zakupem możesz pobrać ' +
+        'bezpłatną próbkę PDF z 16 prawdziwymi rekordami.',
+    },
+    {
+      q: 'Czy płacę za rekordy, które nie mają danych kontaktowych?',
+      a:
+        'Nie. Cena liczona jest wyłącznie za rekordy z co najmniej jednym kanałem kontaktu (telefon, ' +
+        'e-mail lub WWW). Rekordy bez kontaktu trafiają do pliku gratis - dokładny podział widzisz ' +
+        'przed płatnością.',
+    },
+    {
+      q: 'Czy dostanę fakturę VAT?',
+      a:
+        'Tak. Przy płatności możesz podać NIP i dane firmy; fakturę wystawiamy na życzenie - wystarczy ' +
+        'po zakupie wysłać e-mail z numerem zamówienia (adres znajdziesz w stopce strony i w ' +
+        'potwierdzeniu zakupu).',
+    },
+    {
+      q: 'Do czego mogę używać kupionej bazy?',
+      a:
+        'Do własnych działań: kontaktu z instytucjami, planowania tras koncertowych, wystaw czy ' +
+        'warsztatów oraz wysyłki własnych ofert. Licencja obejmuje użytek własny - bez odsprzedaży ' +
+        'i publicznego udostępniania pliku. Szczegóły w Regulaminie.',
+    },
+    {
+      q: 'Jak płacę i kiedy dostanę plik?',
+      a:
+        'Płatność obsługuje Stripe: BLIK, Przelewy24 lub karta. Plik pobierasz od razu po potwierdzeniu ' +
+        'płatności; link do pobrania działa 24 godziny (do 10 pobrań) i wysyłamy go też na Twój e-mail.',
+    },
+    {
+      q: 'Co jeśli mam zastrzeżenia do kupionego pliku?',
+      a:
+        'Napisz na adres e-mail podany w stopce, dołączając numer zamówienia z potwierdzenia. ' +
+        'Każdą reklamację rozpatrujemy indywidualnie zgodnie z Regulaminem.',
+    },
+  ];
+}
+
 app.get('/baza', (req, res) => {
   const description =
     'Baza ponad 2 200 domów kultury, bibliotek i centrów kultury w Polsce. ' +
     'Filtruj po województwie, powiecie, gminie i miejscowości, sprawdź dane ' +
     'kontaktowe i wyeksportuj listę do CSV, XLSX lub PDF.';
+  const faq = faqView(lastDataUpdate());
   res.render('baza', {
     cennik: cennikView(),
+    faq,
     user: req.user || null,
     stripePublishableKey: publishableKey,
     stripeConfigured,
@@ -205,22 +262,33 @@ app.get('/baza', (req, res) => {
     description,
     robots: 'index, follow',
     canonicalUrl: canonicalUrl('/baza'),
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'Dataset',
-      name: 'Baza Danych Instytucji Kultury',
-      description,
-      url: canonicalUrl('/baza'),
-      license: canonicalUrl('/regulamin'),
-      isAccessibleForFree: false,
-      keywords: ['domy kultury', 'biblioteki', 'centra kultury', 'instytucje kultury', 'kontakty'],
-      creator: {
-        '@type': 'Organization',
-        name: seller.name,
-        email: seller.email,
-        url: baseUrl(),
+    structuredData: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Dataset',
+        name: 'Baza Danych Instytucji Kultury',
+        description,
+        url: canonicalUrl('/baza'),
+        license: canonicalUrl('/regulamin'),
+        isAccessibleForFree: false,
+        keywords: ['domy kultury', 'biblioteki', 'centra kultury', 'instytucje kultury', 'kontakty'],
+        creator: {
+          '@type': 'Organization',
+          name: seller.name,
+          email: seller.email,
+          url: baseUrl(),
+        },
       },
-    },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faq.map((item) => ({
+          '@type': 'Question',
+          name: item.q,
+          acceptedAnswer: { '@type': 'Answer', text: item.a },
+        })),
+      },
+    ],
   });
 });
 

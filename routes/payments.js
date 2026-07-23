@@ -258,6 +258,9 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireConsents, r
       customer_creation: 'always',
       tax_id_collection: { enabled: true },
       billing_address_collection: 'auto',
+      // Pole "kod promocyjny" w Checkout - kody (np. rabat za zapis na próbkę)
+      // zakładamy w Stripe Dashboard; bez kodów pole po prostu nie przeszkadza.
+      allow_promotion_codes: true,
       // 'if_required', nie 'never': metody bez przekierowania (karta, Link)
       // kończą się w modalu przez onComplete (public/js/checkout.js), ale BLIK,
       // Klarna i P24 WYMAGAJĄ przekierowania do banku - w trybie 'never' Stripe
