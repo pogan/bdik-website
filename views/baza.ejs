@@ -63,12 +63,33 @@
       </div>
       <div class="step step-sample">
         <div class="idx">4</div>
-        <div class="step-sample-body">
-          <div>
-            <div class="st-title">Pobierz przykładową listę</div>
-            <p class="st-desc">Zobacz, jak wygląda plik przed zakupem: 16 prawdziwych instytucji — po jednej z każdego województwa, z kompletem danych kontaktowych. Próbka jest w PDF; eksport w CSV i XLSX zawiera dodatkowo m.in. NIP, PKD i daty.</p>
+        <div class="w-100">
+          <div class="step-sample-body">
+            <div>
+              <div class="st-title">Pobierz przykładową listę</div>
+              <p class="st-desc">Zobacz, jak wygląda plik przed zakupem: 16 prawdziwych instytucji — po jednej z każdego województwa, z kompletem danych kontaktowych. Próbka jest w PDF; eksport w CSV i XLSX zawiera dodatkowo m.in. NIP, PKD i daty.</p>
+            </div>
+            <a class="btn btn-primary" id="sample-download" href="/pliki/przykladowa-lista-instytucji-kultury.pdf" download>Pobierz przykład (PDF)</a>
           </div>
-          <a class="btn btn-primary" id="sample-download" href="/pliki/przykladowa-lista-instytucji-kultury.pdf" download>Pobierz przykład (PDF)</a>
+          <!-- Opcjonalny lead: próbka jest dostępna od ręki powyżej; e-mail to
+               dodatkowa droga (z kodem rabatowym), nie bramka. -->
+          <form id="lead-form" class="lead-capture mt-3" novalidate>
+            <div class="small fw-semibold">Wolisz na e-mail? Wyślemy Ci próbkę i kod rabatowy na pierwszy eksport.</div>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+              <input type="email" class="form-control form-control-sm" id="lead-email"
+                     placeholder="twoj@adres.pl" autocomplete="email" style="max-width:260px" required>
+              <button type="submit" class="btn btn-outline-primary btn-sm" id="lead-submit">Wyślij próbkę</button>
+            </div>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="lead-consent">
+              <label class="form-check-label lead-consent-label" for="lead-consent">
+                Chcę otrzymać na podany adres próbkę oraz pojedyncze wiadomości o bazie (np. kod
+                rabatowy, informacja o aktualizacji danych). Zgodę mogę wycofać w każdej chwili —
+                <a href="/polityka-prywatnosci" target="_blank" rel="noopener">Polityka prywatności</a>.
+              </label>
+            </div>
+            <div class="small mt-1 d-none" id="lead-status"></div>
+          </form>
         </div>
       </div>
     </div>

@@ -299,6 +299,10 @@ a:hover { color: var(--accent-strong); }
   background: var(--surface); box-shadow: var(--shadow-sm);
   padding: 1.1rem 1.15rem; height: 100%;
 }
+/* Formularz "próbka na e-mail" (lead) w kroku 4 */
+.lead-capture { border-top: 1px dashed var(--line-strong); padding-top: .9rem; }
+.lead-capture .lead-consent-label { font-size: .78rem; color: var(--muted); line-height: 1.45; }
+
 /* Sekcja FAQ --------------------------------------------------------------- */
 .faq { border-top: 1px solid var(--line); background: var(--surface); padding: 2.75rem 0; }
 .faq .accordion { max-width: 52rem; }

@@ -190,6 +190,16 @@ CREATE TABLE IF NOT EXISTS events (
   PRIMARY KEY (ip_hash, name)
 );
 
+-- Leady: adresy e-mail zostawione dobrowolnie w formularzu próbki (za zgodą
+-- marketingową). Jeden wiersz na adres; consent_at dokumentuje moment zgody.
+CREATE TABLE IF NOT EXISTS leads (
+  id INTEGER PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  source TEXT,
+  consent_at TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Dziennik zdarzeń lejka sprzedażowego: jeden wiersz na KAŻDE zdarzenie, z
 -- metadanymi (JSON, np. kwota widzianej wyceny). Uzupełnia tabelę events, która
 -- liczy wyłącznie unikalne osoby - stąd panel /admin/stats może pokazać zarówno

@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const db = require('../db');
 const { queryInstitutions, countWithContact, coverageCounts, facetValues, FILTERABLE_COLUMNS, ADMIN_FILTERABLE_COLUMNS, CONTACT_FILTER_VALUES } = require('../lib/query');
 const { priceBreakdown, formatAmount, formatPricePerRow } = require('../lib/pricing');
@@ -6,6 +7,8 @@ const { isAdmin, fieldsForRequest } = require('../lib/projection');
 const { normalizeSelection, EXPORT_FORMATS } = require('../lib/orders');
 const { streamExport } = require('../lib/exportRun');
 const { recordEvent, isClientEvent } = require('../lib/visits');
+const { isValidEmail, saveLead } = require('../lib/leads');
+const { sendLeadSampleSafe } = require('../lib/mailer');
 
 const router = express.Router();
 
@@ -122,6 +125,33 @@ router.post('/events/:name', (req, res) => {
   if (!isClientEvent(req.params.name) || !recordEvent(req.ip, req.params.name)) {
     return res.status(400).json({ error: 'Nieznane zdarzenie.' });
   }
+  return res.status(204).end();
+});
+
+// Formularz próbki: zapis leada wymaga poprawnego adresu i JAWNEJ zgody
+// marketingowej (literalne true, jak przy zgodach zakupowych). Limit chroni
+// przed zapychaniem tabeli i masową wysyłką z naszego SMTP.
+const leadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Zbyt wiele zgłoszeń. Spróbuj ponownie za kilka minut.' },
+});
+
+router.post('/leads', leadLimiter, express.json(), (req, res) => {
+  const email = typeof req.body.email === 'string' ? req.body.email.trim() : '';
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'Podaj poprawny adres e-mail.' });
+  }
+  if (req.body.consent !== true) {
+    return res.status(400).json({ error: 'Aby otrzymać próbkę e-mailem, zaznacz zgodę.' });
+  }
+
+  saveLead(email, 'sample');
+  sendLeadSampleSafe(email);
+  if (!isAdmin(req)) recordEvent(req.ip, 'lead_saved');
+
   return res.status(204).end();
 });
 
