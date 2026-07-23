@@ -81,8 +81,9 @@
           <h2 class="pricing-title">Ile to kosztuje?</h2>
           <p class="pricing-lead">
             Płacisz jednorazowo, tylko za zakres, który sam wybierzesz filtrami —
-            bez abonamentu i bez rejestracji. Im większy eksport, tym niższa
-            stawka za rekord.
+            bez abonamentu i bez rejestracji. Liczą się wyłącznie rekordy z danymi
+            kontaktowymi (telefon, e-mail lub WWW); pozostałe trafiają do pliku
+            gratis. Im większy eksport, tym niższa stawka za rekord.
           </p>
           <table class="table table-sm pricing-tiers mb-2">
             <thead>
@@ -159,7 +160,17 @@
               <option value="">Wszystkie</option>
             </select>
           </div>
-          <div class="col-12">
+          <div class="col-6 col-md-3">
+            <label class="form-label small text-secondary mb-1">Dane kontaktowe</label>
+            <select class="form-select form-select-sm" id="f-contact">
+              <option value="">Wszystkie rekordy</option>
+              <option value="any">Tylko z kontaktem</option>
+              <option value="email">Tylko z e-mailem</option>
+              <option value="phone">Tylko z telefonem</option>
+              <option value="website">Tylko ze stroną WWW</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-9">
             <label class="form-label small text-secondary mb-1">Szukaj po nazwie</label>
             <div class="input-group input-group-sm">
               <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -210,7 +221,7 @@
           <i class="bi bi-file-earmark-pdf"></i><span>PDF</span>
         </button>
       </div>
-      <div class="export-hint small"><i class="bi bi-unlock me-1"></i>Pełne dane kontaktowe odblokowujesz eksportem</div>
+      <div class="export-hint small"><i class="bi bi-unlock me-1"></i>Pełne dane kontaktowe odblokowujesz eksportem · płacisz tylko za rekordy z kontaktem, resztę dostajesz gratis</div>
     </section>
 
     <div class="table-shell table-responsive">
@@ -250,14 +261,26 @@
                 <span class="badge rounded-pill d-none" id="cov-email"></span>
                 <span class="badge rounded-pill d-none" id="cov-website"></span>
               </div>
+              <div class="text-secondary small mt-1">
+                <i class="bi bi-gift me-1"></i>Płacisz tylko za rekordy z co najmniej jednym
+                kanałem kontaktu — pozostałe trafiają do pliku gratis.
+              </div>
             </div>
             <dl class="mb-0 small">
               <div class="d-flex justify-content-between">
-                <dt class="fw-normal text-secondary">Liczba rekordów</dt>
+                <dt class="fw-normal text-secondary">Rekordy w pliku</dt>
                 <dd class="mb-1 text-nowrap" id="sum-rows">—</dd>
               </div>
               <div class="d-flex justify-content-between">
-                <dt class="fw-normal text-secondary">Cena za rekord (śr.)</dt>
+                <dt class="fw-normal text-secondary">W tym płatne (z kontaktem)</dt>
+                <dd class="mb-1 text-nowrap" id="sum-billed">—</dd>
+              </div>
+              <div class="d-flex justify-content-between">
+                <dt class="fw-normal text-secondary">Gratis (bez kontaktu)</dt>
+                <dd class="mb-1 text-nowrap" id="sum-free">—</dd>
+              </div>
+              <div class="d-flex justify-content-between">
+                <dt class="fw-normal text-secondary">Cena za rekord płatny (śr.)</dt>
                 <dd class="mb-1 text-nowrap" id="sum-perrow">—</dd>
               </div>
               <div class="d-flex justify-content-between">

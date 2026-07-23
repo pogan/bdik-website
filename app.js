@@ -17,7 +17,7 @@ const { TERMS_VERSION, isKnownTermsVersion, termsViewName } = require('./lib/leg
 const { baseUrl, canonicalUrl } = require('./lib/seo');
 const { recordVisit } = require('./lib/visits');
 const { TIERS, MIN_AMOUNT, priceBreakdown, breakdownFromNet, formatAmount } = require('./lib/pricing');
-const { countInstitutions } = require('./lib/query');
+const { countInstitutions, countWithContact } = require('./lib/query');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const paymentRoutes = require('./routes/payments');
@@ -167,7 +167,10 @@ function cennikView() {
     const bd = priceBreakdown(rows);
     return { label, note, rows, grossLabel: formatAmount(bd.gross) };
   };
+  // Płatne są tylko rekordy z danymi kontaktowymi (patrz routes/payments.js),
+  // więc przykład "cała baza" wycenia rekordy z kontaktem, nie wszystkie wiersze.
   const totalRows = countInstitutions(db);
+  const billableRows = countWithContact(db);
   return {
     tiers: TIERS.map((t, i) => ({
       from: i === 0 ? 1 : TIERS[i - 1].upTo + 1,
@@ -176,9 +179,9 @@ function cennikView() {
     })),
     minGrossLabel: formatAmount(breakdownFromNet(MIN_AMOUNT).gross),
     examples: [
-      example('Jedna miejscowość', 'np. wybrane miasto, ok. 25 instytucji', 25),
-      example('Całe województwo', 'ok. 150 instytucji', 150),
-      example('Cała baza', `wszystkie ${totalRows} instytucji`, totalRows),
+      example('Jedna miejscowość', 'np. wybrane miasto, ok. 25 rekordów z kontaktem', 25),
+      example('Całe województwo', 'ok. 150 rekordów z kontaktem', 150),
+      example('Cała baza', `${totalRows} instytucji, płatne ${billableRows} z kontaktem`, billableRows),
     ],
   };
 }

@@ -2,7 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const db = require('../db');
 const orders = require('../lib/orders');
-const { countInstitutions, coverageCounts } = require('../lib/query');
+const { countInstitutions, countWithContact, coverageCounts } = require('../lib/query');
 const {
   priceBreakdown,
   breakdownFromNet,
@@ -66,13 +66,18 @@ function requireConsents(req, res, next) {
 }
 
 // Rozbicie kosztów w kształcie dla modala/paragonu (netto, VAT 23%, brutto oraz
-// średnia cena za rekord). Liczone z zapisanego netto - także po zmianie cennika
-// zamówienie pokazuje kwotę faktycznie pobraną.
-function pricingPayload(net, rowCount) {
+// średnia cena za rekord płatny). Liczone z zapisanego netto - także po zmianie
+// cennika zamówienie pokazuje kwotę faktycznie pobraną.
+// billedCount = null dotyczy zamówień sprzed wyceny "za rekordy z kontaktem" -
+// wtedy płatne były wszystkie wiersze.
+function pricingPayload(net, rowCount, billedCount = null) {
+  const billed = billedCount === null || billedCount === undefined ? rowCount : billedCount;
   const { net: netAmount, vat, gross } = breakdownFromNet(net);
   return {
     rowCount,
-    perRowLabel: formatPricePerRow(rowCount > 0 ? netAmount / rowCount : 0),
+    billedCount: billed,
+    freeCount: Math.max(rowCount - billed, 0),
+    perRowLabel: formatPricePerRow(billed > 0 ? netAmount / billed : 0),
     netLabel: formatAmount(netAmount),
     vatRate: Math.round(VAT_RATE * 100),
     vatLabel: formatAmount(vat),
@@ -98,7 +103,7 @@ function orderPayload(order) {
     rowCount: order.row_count,
     amount: gross,
     amountLabel: formatAmount(gross),
-    pricing: pricingPayload(order.amount, order.row_count),
+    pricing: pricingPayload(order.amount, order.row_count, order.billed_count),
     description: describeFilters({ ...selection.filters, q: selection.q }),
     paymentIntent: order.stripe_payment_intent || null,
     downloadUrl: state.ok ? downloadPath : null,
@@ -146,12 +151,15 @@ router.post('/api/checkout/quote', express.json(), (req, res) => {
 
   const selection = orders.normalizeSelection(req.body);
   const rowCount = countInstitutions(db, { filters: selection.filters, search: selection.q });
-  const bd = priceBreakdown(rowCount);
+  // Płatne są wyłącznie rekordy z jakimkolwiek kanałem kontaktu; reszta pliku
+  // jest gratis - stąd wycena z countWithContact, nie z pełnej liczby wierszy.
+  const billedCount = countWithContact(db, { filters: selection.filters, search: selection.q });
+  const bd = priceBreakdown(billedCount);
 
   // Kluczowy punkt lejka: ile osób zobaczyło konkretną kwotę i na niej odpadło.
   // Kwota w meta pozwala panelowi /admin/stats pokazać rozkład widzianych cen.
   if (!isAdmin(req)) {
-    recordEvent(req.ip, 'quote_view', { format, rows: rowCount, gross: bd.gross });
+    recordEvent(req.ip, 'quote_view', { format, rows: rowCount, billed: billedCount, gross: bd.gross });
   }
 
   return res.json({
@@ -160,7 +168,7 @@ router.post('/api/checkout/quote', express.json(), (req, res) => {
     rowCount,
     amount: bd.gross,
     amountLabel: formatAmount(bd.gross),
-    pricing: pricingPayload(bd.net, rowCount),
+    pricing: pricingPayload(bd.net, rowCount, billedCount),
     description: describeFilters({ ...selection.filters, q: selection.q }),
     // Pokrycie danych kontaktowych (telefon/e-mail/WWW) dla wycenianego zakresu -
     // te same liczby co badge w nagłówku tabeli. Kupujący widzi w podsumowaniu,
@@ -186,8 +194,19 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireConsents, r
     if (rowCount === 0) {
       return res.status(400).json({ error: 'Wybrane filtry nie zwracają żadnych instytucji - nie ma czego eksportować.' });
     }
+    // Wycena od rekordów z danymi kontaktowymi (reszta pliku gratis). Zakres
+    // całkiem bez kontaktów blokujemy - sprzedawanie samych pustych wierszy
+    // byłoby nieuczciwe, a filtr "tylko z kontaktem" pozwala to obejść świadomie.
+    const billedCount = countWithContact(db, { filters: selection.filters, search: selection.q });
+    if (billedCount === 0) {
+      return res.status(400).json({
+        error:
+          'Żaden rekord w wybranym zakresie nie ma telefonu, e-maila ani strony WWW. ' +
+          'Poszerz wybór albo użyj filtra "Dane kontaktowe", żeby zobaczyć rekordy z kontaktem.',
+      });
+    }
     // Netto z cennika; VAT dolicza Stripe przez stawkę podatku (poniżej).
-    const { net, vat, gross } = priceBreakdown(rowCount);
+    const { net, vat, gross } = priceBreakdown(billedCount);
 
     const order = orders.createOrder({
       userId: req.user ? req.user.id : null,
@@ -195,6 +214,7 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireConsents, r
       format,
       selection,
       rowCount,
+      billedCount,
       amount: net,
       currency: CURRENCY,
       // Wersja regulaminu zaakceptowana przy tym zakupie (zgody potwierdzone
@@ -213,7 +233,7 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireConsents, r
       console.error('Stripe: nie udało się ustalić stawki VAT, pobieram brutto jako jedną pozycję:', err.message);
     }
     const productData = {
-      name: lineItemName(format, rowCount),
+      name: lineItemName(format, rowCount, billedCount),
       description: describeFilters({ ...selection.filters, q: selection.q }),
     };
     const lineItem = vatTaxRateId
@@ -251,7 +271,7 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireConsents, r
     // Start płatności rejestrowany po udanym założeniu sesji Stripe - dalsze
     // losy zamówienia (opłacone/nieudane) panel czyta wprost z tabeli orders.
     if (!isAdmin(req)) {
-      recordEvent(req.ip, 'checkout_start', { format, rows: rowCount, gross });
+      recordEvent(req.ip, 'checkout_start', { format, rows: rowCount, billed: billedCount, gross });
     }
 
     return res.json({

@@ -41,6 +41,8 @@
     county: '',
     commune: '',
     locality: '',
+    // Filtr "tylko z danymi kontaktowymi" (any/phone/email/website albo '').
+    contact: '',
     q: '',
     sort: 'name',
     order: 'asc',
@@ -109,6 +111,7 @@
     for (const [key, value] of Object.entries(state.admin)) {
       if (value) params.set(key, value);
     }
+    if (state.contact) params.set('contact', state.contact);
     if (state.q) params.set('q', state.q);
     params.set('sort', state.sort);
     params.set('order', state.order);
@@ -260,6 +263,7 @@
     for (const key of HIERARCHY) {
       if (state[key]) selection[key] = state[key];
     }
+    if (state.contact) selection.contact = state.contact;
     // Filtry administratora też zawężają plik - inaczej eksport obejmowałby
     // szerszy zakres, niż widać w tabeli.
     for (const [key, value] of Object.entries(state.admin)) {
@@ -285,8 +289,11 @@
       box.classList.add('d-none');
       return;
     }
+    const free = exportPrice.freeCount
+      ? ` — płacisz za ${exportPrice.billedCount} rekordów z kontaktem, ${exportPrice.freeCount} gratis`
+      : '';
     document.getElementById('export-price-text').textContent =
-      `Eksport tych ${total} instytucji: ${exportPrice.grossLabel} brutto (śr. ${exportPrice.perRowLabel} za rekord)`;
+      `Eksport tych ${total} instytucji: ${exportPrice.grossLabel} brutto${free}`;
     box.classList.remove('d-none');
   }
 
@@ -446,6 +453,13 @@
       });
     });
 
+    document.getElementById('f-contact').addEventListener('change', (e) => {
+      trackFilterChange();
+      state.contact = e.target.value;
+      state.page = 1;
+      fetchResults();
+    });
+
     document.getElementById('f-search').addEventListener('input', (e) => {
       trackFilterChange();
       clearTimeout(searchDebounce);
@@ -459,8 +473,10 @@
     document.getElementById('f-reset').addEventListener('click', async () => {
       HIERARCHY.forEach((level) => { state[level] = ''; });
       state.q = '';
+      state.contact = '';
       state.page = 1;
       document.getElementById('f-search').value = '';
+      document.getElementById('f-contact').value = '';
       resetAdminFilters();
       await loadFacet('voivodeship');
       await refreshFacetsBelow('voivodeship');

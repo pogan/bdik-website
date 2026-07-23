@@ -35,6 +35,10 @@ ensureColumn('orders', 'billing_name', 'TEXT');
 ensureColumn('orders', 'billing_tax_id', 'TEXT');
 ensureColumn('orders', 'billing_address', 'TEXT');
 
+// Liczba rekordów płatnych (z danymi kontaktowymi) - wycena "płacisz tylko za
+// rekordy z kontaktem"; NULL w zamówieniach sprzed tej zmiany.
+ensureColumn('orders', 'billed_count', 'INTEGER');
+
 // Źródło pierwszej wizyty (referrer/UTM/strona wejścia) - patrz lib/visits.js.
 ensureColumn('visits', 'referrer', 'TEXT');
 ensureColumn('visits', 'utm_source', 'TEXT');

@@ -60,7 +60,7 @@
     el('checkout-summary-title').textContent = 'Przygotowywanie…';
     el('checkout-summary-filters').textContent = '';
     el('checkout-coverage').classList.add('d-none');
-    ['sum-rows', 'sum-perrow', 'sum-net', 'sum-vat', 'sum-gross'].forEach((id) => {
+    ['sum-rows', 'sum-billed', 'sum-free', 'sum-perrow', 'sum-net', 'sum-vat', 'sum-gross'].forEach((id) => {
       el(id).textContent = '—';
     });
   }
@@ -102,6 +102,8 @@
     renderCoverage(data.coverage);
     const p = data.pricing || {};
     el('sum-rows').textContent = data.rowCount;
+    el('sum-billed').textContent = p.billedCount === undefined ? '—' : p.billedCount;
+    el('sum-free').textContent = p.freeCount === undefined ? '—' : p.freeCount;
     el('sum-perrow').textContent = p.perRowLabel || '—';
     el('sum-net').textContent = p.netLabel || '—';
     if (p.vatRate) el('sum-vat-label').textContent = `VAT (${p.vatRate}%)`;
@@ -226,6 +228,14 @@
         return;
       }
       renderSummary(quote);
+      // Zakres bez ani jednego rekordu z kontaktem - serwer i tak odmówi
+      // (routes/payments.js), więc mówimy to od razu, zanim ktoś zaznaczy zgody.
+      if (quote.pricing && quote.pricing.billedCount === 0) {
+        showError(
+          'Żaden rekord w tym zakresie nie ma telefonu, e-maila ani strony WWW. ' +
+          'Poszerz wybór albo użyj filtra "Dane kontaktowe", żeby wybrać rekordy z kontaktem.'
+        );
+      }
     } catch (err) {
       showError(err.message);
     }

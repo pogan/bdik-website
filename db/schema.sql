@@ -125,6 +125,9 @@ CREATE TABLE IF NOT EXISTS orders (
   format TEXT NOT NULL,
   filters TEXT NOT NULL,
   row_count INTEGER NOT NULL,
+  -- Rekordy PŁATNE (z co najmniej jednym kanałem kontaktu) z chwili zakupu;
+  -- row_count to całość pliku, różnica trafia do klienta gratis.
+  billed_count INTEGER,
   amount INTEGER NOT NULL,
   currency TEXT NOT NULL DEFAULT 'pln',
   status TEXT NOT NULL DEFAULT 'pending',

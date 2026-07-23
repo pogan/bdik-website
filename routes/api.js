@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { queryInstitutions, coverageCounts, facetValues, FILTERABLE_COLUMNS, ADMIN_FILTERABLE_COLUMNS } = require('../lib/query');
+const { queryInstitutions, countWithContact, coverageCounts, facetValues, FILTERABLE_COLUMNS, ADMIN_FILTERABLE_COLUMNS, CONTACT_FILTER_VALUES } = require('../lib/query');
 const { priceBreakdown, formatAmount, formatPricePerRow } = require('../lib/pricing');
 const { isAdmin, fieldsForRequest } = require('../lib/projection');
 const { normalizeSelection, EXPORT_FORMATS } = require('../lib/orders');
@@ -28,6 +28,11 @@ function parseFilters(query, req) {
   for (const col of allowed) {
     const value = query[col];
     if (typeof value === 'string' && value.trim()) filters[col] = value.trim();
+  }
+  // Publiczny filtr "tylko z danymi kontaktowymi" - wartości spoza białej listy
+  // odpadają już tutaj (buildWhere i tak by je zignorował).
+  if (typeof query.contact === 'string' && CONTACT_FILTER_VALUES.includes(query.contact)) {
+    filters.contact = query.contact;
   }
   return filters;
 }
@@ -58,10 +63,17 @@ router.get('/institutions', (req, res) => {
 
   // Orientacyjna cena eksportu bieżącego zestawu wyników - karta eksportu
   // pokazuje ją na żywo, żeby kwota nie była niespodzianką dopiero w modalu.
-  // Wiążąca wycena i tak powstaje wyłącznie w /api/checkout (na serwerze).
-  const bd = priceBreakdown(result.total);
-  const exportPrice = result.total > 0
-    ? { grossLabel: formatAmount(bd.gross), perRowLabel: formatPricePerRow(bd.perRow) }
+  // Płatne są tylko rekordy z kontaktem (jak w /api/checkout, gdzie i tak
+  // powstaje jedyna wiążąca wycena).
+  const billed = countWithContact(db, { filters, search });
+  const bd = priceBreakdown(billed);
+  const exportPrice = result.total > 0 && billed > 0
+    ? {
+        grossLabel: formatAmount(bd.gross),
+        perRowLabel: formatPricePerRow(bd.perRow),
+        billedCount: billed,
+        freeCount: Math.max(result.total - billed, 0),
+      }
     : null;
 
   res.json({
