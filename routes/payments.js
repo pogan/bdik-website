@@ -18,6 +18,8 @@ const { stripe, stripeConfigured, baseUrl, getVatTaxRateId } = require('../lib/s
 const { ensureBackup, saveBackupSafe } = require('../lib/backup');
 const { sendConfirmationSafe } = require('../lib/mailer');
 const { TERMS_VERSION } = require('../lib/legal');
+const { recordEvent } = require('../lib/visits');
+const { isAdmin } = require('../lib/projection');
 
 const router = express.Router();
 
@@ -146,6 +148,12 @@ router.post('/api/checkout/quote', express.json(), (req, res) => {
   const rowCount = countInstitutions(db, { filters: selection.filters, search: selection.q });
   const bd = priceBreakdown(rowCount);
 
+  // Kluczowy punkt lejka: ile osób zobaczyło konkretną kwotę i na niej odpadło.
+  // Kwota w meta pozwala panelowi /admin/stats pokazać rozkład widzianych cen.
+  if (!isAdmin(req)) {
+    recordEvent(req.ip, 'quote_view', { format, rows: rowCount, gross: bd.gross });
+  }
+
   return res.json({
     format,
     formatLabel: FORMAT_LABELS[format],
@@ -239,6 +247,12 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireConsents, r
     });
 
     orders.attachSession(order.id, session.id);
+
+    // Start płatności rejestrowany po udanym założeniu sesji Stripe - dalsze
+    // losy zamówienia (opłacone/nieudane) panel czyta wprost z tabeli orders.
+    if (!isAdmin(req)) {
+      recordEvent(req.ip, 'checkout_start', { format, rows: rowCount, gross });
+    }
 
     return res.json({
       clientSecret: session.client_secret,

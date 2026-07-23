@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <%- include('partials/head', { title: 'Statystyki - panel administratora' }) %>
+</head>
+<body>
+  <%- include('partials/nav', { user: typeof user !== 'undefined' ? user : null }) %>
+
+  <main class="container pb-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-3 gap-2">
+      <div>
+        <h1 class="h4 mb-1">Statystyki lejka sprzedażowego</h1>
+        <p class="text-secondary small mb-0">
+          Unikalne osoby liczone po zahaszowanym IP · przychód netto z opłaconych zamówień:
+          <span class="fw-semibold text-body"><%= revenue.netLabel %></span>
+        </p>
+      </div>
+      <a href="/baza" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Do bazy</a>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12 col-lg-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h2 class="h6 mb-3">Lejek: od wizyty do zapłaty</h2>
+            <table class="table table-sm align-middle mb-0 small">
+              <thead>
+                <tr><th>Krok</th><th class="text-end">Liczba</th><th class="text-end">% odwiedzin</th></tr>
+              </thead>
+              <tbody>
+                <% funnel.forEach((step) => { %>
+                  <tr>
+                    <td><%= step.label %> <span class="text-body-tertiary">(<%= step.unit %>)</span></td>
+                    <td class="text-end fw-semibold"><%= step.value.toLocaleString('pl-PL') %></td>
+                    <td class="text-end text-secondary"><%= step.pctOfVisits === null ? '—' : step.pctOfVisits.toLocaleString('pl-PL') + '%' %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h2 class="h6 mb-3">Widziane wyceny (kwoty brutto)</h2>
+            <% if (!quoteBuckets.length) { %>
+              <p class="text-secondary small mb-0">Jeszcze żadnych wycen - dane pojawią się, gdy ktoś otworzy okno eksportu.</p>
+            <% } else { %>
+              <table class="table table-sm align-middle mb-2 small">
+                <thead>
+                  <tr><th>Przedział</th><th class="text-end">Wyceny</th><th class="text-end">Osoby</th></tr>
+                </thead>
+                <tbody>
+                  <% quoteBuckets.forEach((b) => { %>
+                    <tr>
+                      <td><%= b.label %></td>
+                      <td class="text-end fw-semibold"><%= b.views.toLocaleString('pl-PL') %></td>
+                      <td class="text-end text-secondary"><%= b.people.toLocaleString('pl-PL') %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+              <p class="text-secondary mb-0" style="font-size:.75rem">
+                Porównaj z liczbą opłaconych zamówień: jeśli wyceny kończą się na wysokich
+                przedziałach bez zakupów, cena za duże zakresy jest barierą.
+              </p>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h2 class="h6 mb-3">Źródła pierwszej wizyty</h2>
+            <% if (!sources.length) { %>
+              <p class="text-secondary small mb-0">Brak danych o źródłach (zbierane od wdrożenia tej wersji).</p>
+            <% } else { %>
+              <table class="table table-sm align-middle mb-2 small">
+                <thead><tr><th>Źródło (UTM lub referrer)</th><th class="text-end">Osoby</th></tr></thead>
+                <tbody>
+                  <% sources.forEach((s) => { %>
+                    <tr><td><%= s.label %></td><td class="text-end fw-semibold"><%= s.value.toLocaleString('pl-PL') %></td></tr>
+                  <% }) %>
+                </tbody>
+              </table>
+              <p class="text-secondary mb-0" style="font-size:.75rem">
+                Linki wrzucane w social media oznaczaj parametrami, np.
+                <code>/baza?utm_source=facebook&amp;utm_medium=social&amp;utm_campaign=nazwa</code>.
+              </p>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h2 class="h6 mb-3">Ostatnie 30 dni</h2>
+            <% if (!daily.length) { %>
+              <p class="text-secondary small mb-0">Brak aktywności w ostatnich 30 dniach.</p>
+            <% } else { %>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0 small">
+                  <thead>
+                    <tr>
+                      <th>Dzień</th>
+                      <th class="text-end">Nowi odwiedzający</th>
+                      <th class="text-end">Wyceny</th>
+                      <th class="text-end">Zamówienia</th>
+                      <th class="text-end">Opłacone</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% daily.forEach((d) => { %>
+                      <tr>
+                        <td class="text-nowrap text-secondary"><%= d.day %></td>
+                        <td class="text-end"><%= d.visitors %></td>
+                        <td class="text-end"><%= d.quotes %></td>
+                        <td class="text-end"><%= d.orders %></td>
+                        <td class="text-end fw-semibold"><%= d.paid %></td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="/js/cookies.js"></script>
+</body>
+</html>

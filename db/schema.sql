@@ -160,12 +160,19 @@ CREATE TABLE IF NOT EXISTS stripe_events (
   received_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Licznik odwiedzin w stopce: unikalne IP (zahaszowane sha256, nie trzymamy
--- surowych adresów) - COUNT(*) z tej tabeli = liczba unikalnych odwiedzających.
+-- Licznik odwiedzin: unikalne IP (zahaszowane sha256, nie trzymamy surowych
+-- adresów) - COUNT(*) z tej tabeli = liczba unikalnych odwiedzających.
+-- Kolumny źródła wypełniane przy PIERWSZEJ wizycie (atrybucja first-touch):
+-- skąd przyszedł (referrer/UTM) i na którą stronę trafił.
 CREATE TABLE IF NOT EXISTS visits (
   ip_hash TEXT PRIMARY KEY,
   first_seen TEXT NOT NULL DEFAULT (datetime('now')),
-  last_seen TEXT NOT NULL DEFAULT (datetime('now'))
+  last_seen TEXT NOT NULL DEFAULT (datetime('now')),
+  referrer TEXT,
+  utm_source TEXT,
+  utm_medium TEXT,
+  utm_campaign TEXT,
+  landing_path TEXT
 );
 
 -- Zdarzenia w statystykach stopki (widocznych tylko dla administratora).
@@ -179,6 +186,19 @@ CREATE TABLE IF NOT EXISTS events (
   last_seen TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (ip_hash, name)
 );
+
+-- Dziennik zdarzeń lejka sprzedażowego: jeden wiersz na KAŻDE zdarzenie, z
+-- metadanymi (JSON, np. kwota widzianej wyceny). Uzupełnia tabelę events, która
+-- liczy wyłącznie unikalne osoby - stąd panel /admin/stats może pokazać zarówno
+-- "ile osób", jak i rozkład kwot czy przebieg dzienny.
+CREATE TABLE IF NOT EXISTS event_log (
+  id INTEGER PRIMARY KEY,
+  ts TEXT NOT NULL DEFAULT (datetime('now')),
+  ip_hash TEXT NOT NULL,
+  name TEXT NOT NULL,
+  meta TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_event_log_name_ts ON event_log(name, ts);
 
 -- Sesje (express-session) - patrz lib/sqliteSessionStore.js. Ten sam silnik
 -- (better-sqlite3) co reszta bazy, żeby nie mieszać dwóch sterowników SQLite.

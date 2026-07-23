@@ -15,7 +15,7 @@ const { seller } = require('./lib/sellerInfo');
 const { lastDataUpdate } = require('./lib/dataFreshness');
 const { TERMS_VERSION, isKnownTermsVersion, termsViewName } = require('./lib/legal');
 const { baseUrl, canonicalUrl } = require('./lib/seo');
-const { recordVisit, visitCount, eventStats } = require('./lib/visits');
+const { recordVisit } = require('./lib/visits');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const paymentRoutes = require('./routes/payments');
@@ -81,8 +81,8 @@ app.use((req, res, next) => {
 // admina i logowaniem), żeby wywołania AJAX-owe i callbacki OAuth nie zawyżały
 // liczby. Własne wejścia admina też pomijamy - inaczej statystyka mierzyłaby
 // głównie pracę nad serwisem (to samo dla zdarzeń, patrz routes/api.js).
-// Tabelka jest w stopce widoczna wyłącznie dla admina, więc dla pozostałych
-// nie liczymy jej wcale.
+// Przy pierwszej wizycie zapisujemy też źródło (referrer + parametry utm_* z
+// linków wrzucanych w social media) i stronę wejścia - patrz /admin/stats.
 app.use((req, res, next) => {
   if (
     req.method === 'GET' &&
@@ -92,11 +92,14 @@ app.use((req, res, next) => {
     !req.path.startsWith('/admin') &&
     !req.path.startsWith('/auth')
   ) {
-    recordVisit(req.ip);
+    recordVisit(req.ip, {
+      referrer: req.get('referer'),
+      utmSource: typeof req.query.utm_source === 'string' ? req.query.utm_source : null,
+      utmMedium: typeof req.query.utm_medium === 'string' ? req.query.utm_medium : null,
+      utmCampaign: typeof req.query.utm_campaign === 'string' ? req.query.utm_campaign : null,
+      landingPath: req.path,
+    });
   }
-  res.locals.siteStats = res.locals.isAdmin
-    ? [{ label: 'Liczba odwiedzin', value: visitCount() }, ...eventStats()]
-    : null;
   next();
 });
 

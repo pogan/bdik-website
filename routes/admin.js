@@ -1,5 +1,6 @@
 const express = require('express');
 const orders = require('../lib/orders');
+const stats = require('../lib/stats');
 const { isAdmin } = require('../lib/projection');
 const { formatAmount, breakdownFromNet, describeFilters, FORMAT_LABELS } = require('../lib/pricing');
 const { ensureBackup } = require('../lib/backup');
@@ -72,6 +73,19 @@ router.get('/orders', (req, res) => {
     orders: rows,
     ttlHours: orders.DOWNLOAD_TTL_HOURS,
     maxDownloads: orders.MAX_DOWNLOADS,
+  });
+});
+
+// Statystyki lejka sprzedażowego: kroki od wizyty do opłaconego zamówienia,
+// rozkład widzianych wycen, źródła ruchu i przebieg dzienny (lib/stats.js).
+router.get('/stats', (req, res) => {
+  res.render('admin-stats', {
+    user: req.user || null,
+    funnel: stats.funnel(),
+    quoteBuckets: stats.quoteBuckets(),
+    sources: stats.sources(),
+    daily: stats.daily(),
+    revenue: stats.revenue(),
   });
 });
 

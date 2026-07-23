@@ -4,7 +4,7 @@ const { queryInstitutions, coverageCounts, facetValues, FILTERABLE_COLUMNS, ADMI
 const { isAdmin, fieldsForRequest } = require('../lib/projection');
 const { normalizeSelection, EXPORT_FORMATS } = require('../lib/orders');
 const { streamExport } = require('../lib/exportRun');
-const { recordEvent } = require('../lib/visits');
+const { recordEvent, isClientEvent } = require('../lib/visits');
 
 const router = express.Router();
 
@@ -89,14 +89,15 @@ router.get('/institutions/export', requireAdmin, async (req, res) => {
   return streamExport(res, { format, selection, filename: 'instytucje-kultury' });
 });
 
-// Statystyki stopki. Nazwa zdarzenia jest w ścieżce, więc zgłoszenie nie
-// potrzebuje body ani parsera JSON - wystarczy sendBeacon z przeglądarki.
-// Nieznane nazwy odrzucamy (patrz lib/visits.js).
+// Zdarzenia lejka zgłaszane z przeglądarki. Nazwa zdarzenia jest w ścieżce,
+// więc zgłoszenie nie potrzebuje body ani parsera JSON - wystarczy sendBeacon.
+// Przyjmujemy wyłącznie zdarzenia z listy klienckiej (lib/visits.js) - kroków
+// serwerowych (wycena, start płatności) nie da się podrobić POST-em.
 router.post('/events/:name', (req, res) => {
   // Klikanie po własnym serwisie nie jest zachowaniem klienta - admina nie
   // liczymy (tak samo jak jego odwiedzin, patrz app.js).
   if (isAdmin(req)) return res.status(204).end();
-  if (!recordEvent(req.ip, req.params.name)) {
+  if (!isClientEvent(req.params.name) || !recordEvent(req.ip, req.params.name)) {
     return res.status(400).json({ error: 'Nieznane zdarzenie.' });
   }
   return res.status(204).end();

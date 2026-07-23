@@ -23,6 +23,12 @@
     return document.getElementById(id);
   }
 
+  // Statystyki lejka (patrz public/js/table.js - ta sama konwencja sendBeacon).
+  function track(name) {
+    if (navigator.sendBeacon) navigator.sendBeacon(`/api/events/${name}`);
+    else fetch(`/api/events/${name}`, { method: 'POST', keepalive: true });
+  }
+
   // Przycisk "Przejdź do płatności" aktywny tylko, gdy oba oświadczenia zaznaczone.
   function refreshConsentButton() {
     const ok = el('consent-terms').checked && el('consent-withdrawal').checked;
@@ -229,6 +235,7 @@
   // serwer i tak waliduje) i montuje formularz Stripe.
   async function proceedToPayment() {
     if (!pendingSelection) return;
+    track('consents_ok');
     el('checkout-error').classList.add('d-none');
     el('checkout-consents').classList.add('d-none');
     el('checkout-pay').classList.remove('d-none');

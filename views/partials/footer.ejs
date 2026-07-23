@@ -18,18 +18,10 @@
           <li><a href="/polityka-prywatnosci#dane-w-bazie">Dane instytucji w bazie</a></li>
         </ul>
         <div>© <%= new Date().getFullYear() %> <%= seller.name %></div>
-        <% if (siteStats) { %>
-          <table class="table table-sm table-borderless small mb-0 mt-2 w-auto ms-md-auto text-start">
-            <caption class="caption-top py-1">Statystyki (widoczne tylko dla administratora)</caption>
-            <tbody>
-              <% siteStats.forEach((stat) => { %>
-                <tr>
-                  <td class="pe-3 py-1"><%= stat.label %></td>
-                  <td class="py-1 text-end fw-semibold text-body"><%= stat.value.toLocaleString('pl-PL') %></td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
+        <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+          <div class="mt-2">
+            <a href="/admin/stats"><i class="bi bi-graph-up me-1"></i>Statystyki lejka (tylko administrator)</a>
+          </div>
         <% } %>
       </div>
     </div>

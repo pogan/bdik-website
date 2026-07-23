@@ -5,6 +5,9 @@
     </a>
     <div class="d-flex align-items-center gap-2">
       <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <a href="/admin/stats" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-graph-up me-1"></i>Statystyki
+        </a>
         <a href="/admin/orders" class="btn btn-outline-secondary btn-sm">
           <i class="bi bi-receipt me-1"></i>Zamówienia
         </a>

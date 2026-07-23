@@ -35,4 +35,11 @@ ensureColumn('orders', 'billing_name', 'TEXT');
 ensureColumn('orders', 'billing_tax_id', 'TEXT');
 ensureColumn('orders', 'billing_address', 'TEXT');
 
+// Źródło pierwszej wizyty (referrer/UTM/strona wejścia) - patrz lib/visits.js.
+ensureColumn('visits', 'referrer', 'TEXT');
+ensureColumn('visits', 'utm_source', 'TEXT');
+ensureColumn('visits', 'utm_medium', 'TEXT');
+ensureColumn('visits', 'utm_campaign', 'TEXT');
+ensureColumn('visits', 'landing_path', 'TEXT');
+
 module.exports = db;
