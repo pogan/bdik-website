@@ -276,6 +276,20 @@
     });
   }
 
+  // Cena eksportu bieżących filtrów, na żywo w karcie eksportu - klient zna
+  // kwotę PRZED otwarciem modala płatności (kwoty liczy serwer, tu tylko tekst).
+  function updateExportPrice(total, exportPrice) {
+    const box = document.getElementById('export-price');
+    if (!box) return;
+    if (!total || !exportPrice) {
+      box.classList.add('d-none');
+      return;
+    }
+    document.getElementById('export-price-text').textContent =
+      `Eksport tych ${total} instytucji: ${exportPrice.grossLabel} brutto (śr. ${exportPrice.perRowLabel} za rekord)`;
+    box.classList.remove('d-none');
+  }
+
   function attachExportHandlers() {
     document.querySelectorAll('#export-buttons button[data-format]').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -307,6 +321,7 @@
     document.getElementById('result-count').textContent = `${data.total} instytucji spełnia kryteria`;
     renderPagination(data.total, data.page, data.pageSize);
     updateExportButtons(data.total);
+    updateExportPrice(data.total, data.exportPrice);
 
     document.querySelectorAll('#table-head th[data-sort]').forEach((th) => {
       th.addEventListener('click', () => {

@@ -16,6 +16,8 @@ const { lastDataUpdate } = require('./lib/dataFreshness');
 const { TERMS_VERSION, isKnownTermsVersion, termsViewName } = require('./lib/legal');
 const { baseUrl, canonicalUrl } = require('./lib/seo');
 const { recordVisit } = require('./lib/visits');
+const { TIERS, MIN_AMOUNT, priceBreakdown, breakdownFromNet, formatAmount } = require('./lib/pricing');
+const { countInstitutions } = require('./lib/query');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const paymentRoutes = require('./routes/payments');
@@ -157,12 +159,37 @@ app.get('/', (req, res) => {
   res.redirect(301, '/baza');
 });
 
+// Sekcja #cennik na stronie bazy renderuje się z tych samych stałych, którymi
+// serwer faktycznie wycenia eksport (lib/pricing.js) - cennik nie może się
+// rozjechać z pobieraną kwotą. Przykłady liczone priceBreakdown, kwoty brutto.
+function cennikView() {
+  const example = (label, note, rows) => {
+    const bd = priceBreakdown(rows);
+    return { label, note, rows, grossLabel: formatAmount(bd.gross) };
+  };
+  const totalRows = countInstitutions(db);
+  return {
+    tiers: TIERS.map((t, i) => ({
+      from: i === 0 ? 1 : TIERS[i - 1].upTo + 1,
+      upTo: t.upTo === Infinity ? null : t.upTo,
+      perRowLabel: formatAmount(t.perRow),
+    })),
+    minGrossLabel: formatAmount(breakdownFromNet(MIN_AMOUNT).gross),
+    examples: [
+      example('Jedna miejscowość', 'np. wybrane miasto, ok. 25 instytucji', 25),
+      example('Całe województwo', 'ok. 150 instytucji', 150),
+      example('Cała baza', `wszystkie ${totalRows} instytucji`, totalRows),
+    ],
+  };
+}
+
 app.get('/baza', (req, res) => {
   const description =
     'Baza ponad 2 200 domów kultury, bibliotek i centrów kultury w Polsce. ' +
     'Filtruj po województwie, powiecie, gminie i miejscowości, sprawdź dane ' +
     'kontaktowe i wyeksportuj listę do CSV, XLSX lub PDF.';
   res.render('baza', {
+    cennik: cennikView(),
     user: req.user || null,
     stripePublishableKey: publishableKey,
     stripeConfigured,

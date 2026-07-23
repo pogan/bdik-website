@@ -20,6 +20,7 @@
           <div class="hero-cta">
             <a href="#tool" class="btn btn-hero btn-lg"><i class="bi bi-search me-2"></i>Przeglądaj bazę</a>
             <a href="#jak" class="btn btn-hero-ghost btn-lg">Jak to działa</a>
+            <a href="#cennik" class="btn btn-hero-ghost btn-lg">Cennik</a>
           </div>
           <div class="hero-stats">
             <div class="stat"><div class="num">2&nbsp;200+</div><div class="lbl">instytucji kultury</div></div>
@@ -29,6 +30,7 @@
           </div>
           <div class="hero-trust">
             <span class="item"><i class="bi bi-patch-check-fill"></i>Dane z publicznych rejestrów</span>
+            <span class="item"><i class="bi bi-tag-fill"></i>Jednorazowo, od <%= cennik.minGrossLabel %> brutto</span>
             <span class="item"><i class="bi bi-download"></i>Eksport jednym kliknięciem</span>
             <span class="item"><i class="bi bi-shield-lock-fill"></i>Płatność BLIK · Przelewy24 · karta</span>
           </div>
@@ -67,6 +69,57 @@
             <p class="st-desc">Zobacz, jak wygląda plik przed zakupem: 16 prawdziwych instytucji — po jednej z każdego województwa, z kompletem danych kontaktowych. Próbka jest w PDF; eksport w CSV i XLSX zawiera dodatkowo m.in. NIP, PKD i daty.</p>
           </div>
           <a class="btn btn-primary" id="sample-download" href="/pliki/przykladowa-lista-instytucji-kultury.pdf" download>Pobierz przykład (PDF)</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pricing" id="cennik">
+    <div class="container">
+      <div class="row g-4 align-items-start">
+        <div class="col-12 col-lg-5">
+          <h2 class="pricing-title">Ile to kosztuje?</h2>
+          <p class="pricing-lead">
+            Płacisz jednorazowo, tylko za zakres, który sam wybierzesz filtrami —
+            bez abonamentu i bez rejestracji. Im większy eksport, tym niższa
+            stawka za rekord.
+          </p>
+          <table class="table table-sm pricing-tiers mb-2">
+            <thead>
+              <tr><th>Liczba rekordów</th><th class="text-end">Cena netto za rekord</th></tr>
+            </thead>
+            <tbody>
+              <% cennik.tiers.forEach((t) => { %>
+                <tr>
+                  <td><%= t.upTo ? `${t.from}–${t.upTo}` : `powyżej ${t.from - 1}` %></td>
+                  <td class="text-end fw-semibold"><%= t.perRowLabel %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+          <p class="pricing-note mb-0">
+            Progi działają kaskadowo (kolejne rekordy są tańsze). Minimalna wartość
+            zamówienia to <%= cennik.minGrossLabel %> brutto. Do cen netto doliczamy
+            VAT 23% — kwoty w przykładach są brutto, czyli ostatecznych.
+          </p>
+        </div>
+        <div class="col-12 col-lg-7">
+          <div class="row g-3">
+            <% cennik.examples.forEach((ex) => { %>
+              <div class="col-12 col-md-4">
+                <div class="pricing-example">
+                  <div class="pe-label"><%= ex.label %></div>
+                  <div class="pe-price"><%= ex.grossLabel %></div>
+                  <div class="pe-note"><%= ex.note %></div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+          <p class="pricing-note mt-3 mb-0">
+            <i class="bi bi-calculator me-1"></i>Dokładną cenę dla swojego wyboru
+            zobaczysz na żywo przy tabeli — ustaw filtry, a kwota przeliczy się sama,
+            zanim cokolwiek klikniesz dalej.
+          </p>
         </div>
       </div>
     </div>
@@ -140,6 +193,11 @@
           <h3 class="export-card-title" id="export-card-title">Pobierz wybrane dane</h3>
           <p class="export-card-sub mb-0">Wybierz format pliku — eksport obejmuje wszystkie wyniki z aktualnych filtrów.</p>
         </div>
+      </div>
+      <!-- Cena na żywo dla bieżących filtrów (wypełnia table.js z /api/institutions).
+           Orientacyjna - wiążąca kwota i tak liczona jest na serwerze przy zakupie. -->
+      <div class="export-price d-none" id="export-price">
+        <i class="bi bi-tag-fill me-1"></i><span id="export-price-text"></span>
       </div>
       <div class="export-card-actions" id="export-buttons">
         <button type="button" class="btn export-btn" data-format="csv">
