@@ -1,0 +1,51 @@
+  <section class="pricing" id="cennik">
+    <div class="container">
+      <div class="row g-4 align-items-start">
+        <div class="col-12 col-lg-5">
+          <h2 class="pricing-title">Ile to kosztuje?</h2>
+          <p class="pricing-lead">
+            Płacisz jednorazowo, tylko za zakres, który sam wybierzesz filtrami —
+            bez abonamentu i bez rejestracji. Liczą się wyłącznie rekordy z danymi
+            kontaktowymi (telefon, e-mail lub WWW); pozostałe trafiają do pliku
+            gratis. Im większy eksport, tym niższa stawka za rekord.
+          </p>
+          <table class="table table-sm pricing-tiers mb-2">
+            <thead>
+              <tr><th>Liczba rekordów</th><th class="text-end">Cena netto za rekord</th></tr>
+            </thead>
+            <tbody>
+              <% cennik.tiers.forEach((t) => { %>
+                <tr>
+                  <td><%= t.upTo ? `${t.from}–${t.upTo}` : `powyżej ${t.from - 1}` %></td>
+                  <td class="text-end fw-semibold"><%= t.perRowLabel %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+          <p class="pricing-note mb-0">
+            Progi działają kaskadowo (kolejne rekordy są tańsze). Minimalna wartość
+            zamówienia to <%= cennik.minGrossLabel %> brutto. Do cen netto doliczamy
+            VAT 23% — kwoty w przykładach są brutto, czyli ostatecznych.
+          </p>
+        </div>
+        <div class="col-12 col-lg-7">
+          <div class="row g-3">
+            <% cennik.examples.forEach((ex) => { %>
+              <div class="col-12 col-md-4">
+                <div class="pricing-example">
+                  <div class="pe-label"><%= ex.label %></div>
+                  <div class="pe-price"><%= ex.grossLabel %></div>
+                  <div class="pe-note"><%= ex.note %></div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+          <p class="pricing-note mt-3 mb-0">
+            <i class="bi bi-calculator me-1"></i>Dokładną cenę dla swojego wyboru
+            zobaczysz na żywo przy tabeli — ustaw filtry, a kwota przeliczy się sama,
+            zanim cokolwiek klikniesz dalej.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>

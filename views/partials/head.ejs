@@ -25,13 +25,25 @@
 <meta property="og:title" content="<%= metaOgTitle %>">
 <meta property="og:description" content="<%= metaDescription %>">
 <meta property="og:url" content="<%= metaCanonical %>">
+<% if (typeof ogImageUrl !== 'undefined' && ogImageUrl) { %>
+<meta property="og:image" content="<%= ogImageUrl %>">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<% } %>
 
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="<%= typeof ogImageUrl !== 'undefined' && ogImageUrl ? 'summary_large_image' : 'summary' %>">
 <meta name="twitter:title" content="<%= metaOgTitle %>">
 <meta name="twitter:description" content="<%= metaDescription %>">
+<% if (typeof ogImageUrl !== 'undefined' && ogImageUrl) { %>
+<meta name="twitter:image" content="<%= ogImageUrl %>">
+<% } %>
 <% } %>
 
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+
+<% if (typeof orgStructuredData !== 'undefined' && orgStructuredData) { %>
+<script type="application/ld+json"><%- JSON.stringify(orgStructuredData).replace(/</g, '\\u003c') %></script>
+<% } %>
 
 <!-- Zasoby serwowane z własnego serwera (public/vendor) - bez CDN, żeby nie
      wyciekać IP użytkowników do Google/jsDelivr. Aktualizacja: scripts/vendor.js. -->

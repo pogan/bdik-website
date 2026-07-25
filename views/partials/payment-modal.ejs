@@ -1,0 +1,173 @@
+  <div class="modal fade" id="payment-modal" tabindex="-1" aria-labelledby="payment-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="payment-modal-title">Pobierz eksport</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
+        </div>
+        <div class="modal-body">
+          <div class="checkout-summary p-3 mb-3">
+            <div class="fw-semibold" id="checkout-summary-title">Przygotowywanie…</div>
+            <div class="text-secondary small mb-3" id="checkout-summary-filters"></div>
+            <!-- Pokrycie danych kontaktowych w wybranym zakresie (ile rekordów ma
+                 telefon, e-mail, WWW). Wypełnia checkout.js z danych tabeli. -->
+            <div class="d-none mb-3" id="checkout-coverage">
+              <div class="text-secondary small mb-1">Dane kontaktowe w tym zakresie:</div>
+              <div class="d-flex flex-wrap gap-2">
+                <span class="badge rounded-pill d-none" id="cov-phone"></span>
+                <span class="badge rounded-pill d-none" id="cov-email"></span>
+                <span class="badge rounded-pill d-none" id="cov-website"></span>
+              </div>
+              <div class="text-secondary small mt-1">
+                <i class="bi bi-gift me-1"></i>Płacisz tylko za rekordy z co najmniej jednym
+                kanałem kontaktu — pozostałe trafiają do pliku gratis.
+              </div>
+            </div>
+            <dl class="mb-0 small">
+              <div class="d-flex justify-content-between">
+                <dt class="fw-normal text-secondary">Rekordy w pliku</dt>
+                <dd class="mb-1 text-nowrap" id="sum-rows">—</dd>
+              </div>
+              <div class="d-flex justify-content-between">
+                <dt class="fw-normal text-secondary">W tym płatne (z kontaktem)</dt>
+                <dd class="mb-1 text-nowrap" id="sum-billed">—</dd>
+              </div>
+              <div class="d-flex justify-content-between">
+                <dt class="fw-normal text-secondary">Gratis (bez kontaktu)</dt>
+                <dd class="mb-1 text-nowrap" id="sum-free">—</dd>
+              </div>
+              <div class="d-flex justify-content-between">
+                <dt class="fw-normal text-secondary">Cena za rekord płatny (śr.)</dt>
+                <dd class="mb-1 text-nowrap" id="sum-perrow">—</dd>
+              </div>
+              <div class="d-flex justify-content-between">
+                <dt class="fw-normal text-secondary">Wartość netto</dt>
+                <dd class="mb-1 text-nowrap" id="sum-net">—</dd>
+              </div>
+              <div class="d-flex justify-content-between">
+                <dt class="fw-normal text-secondary" id="sum-vat-label">VAT (23%)</dt>
+                <dd class="mb-1 text-nowrap" id="sum-vat">—</dd>
+              </div>
+              <hr class="my-2">
+              <div class="d-flex justify-content-between align-items-baseline">
+                <dt class="fs-5">Do zapłaty (brutto)</dt>
+                <dd class="mb-0 fs-5 fw-semibold text-nowrap" id="sum-gross">—</dd>
+              </div>
+            </dl>
+          </div>
+
+          <!-- Faktura VAT nie jest wystawiana automatycznie - wydajemy ją na
+               żądanie, po zamówieniu (potrzebny numer zamówienia + NIP). -->
+          <div class="invoice-note mb-3">
+            <i class="bi bi-receipt invoice-note-icon"></i>
+            <div>
+              <div class="invoice-note-title">Chcesz fakturę VAT?</div>
+              <p class="mb-0">
+                Fakturę wystawiamy na życzenie po złożeniu zamówienia. Wyślij e-mail z
+                <strong>numerem zamówienia</strong> i <strong>numerem NIP</strong> na adres
+                <a href="mailto:<%= seller.email %>"><%= seller.email %></a> — numer zamówienia
+                zobaczysz tutaj zaraz po opłaceniu (jest też w e-mailu z potwierdzeniem).
+              </p>
+            </div>
+          </div>
+
+          <div id="checkout-error" class="alert alert-danger d-none" role="alert"></div>
+
+          <!-- Zgody wymagane przed płatnością (art. 8 UŚUDE + art. 38 pkt 13 UPK).
+               Dopóki oba pola nie są zaznaczone, nie zakładamy zamówienia ani nie
+               montujemy formularza Stripe. -->
+          <div id="checkout-consents">
+            <div class="alert alert-info small mb-3">
+              <i class="bi bi-info-circle me-1"></i>Dane pochodzą z publicznych rejestrów (m.in. KRS)
+              i ręcznych uzupełnień — pojedyncze rekordy mogą mieć braki, dlatego za rekordy bez
+              danych kontaktowych nie płacisz. Kupujesz licencję do użytku własnego — szczegóły w
+              <a href="/regulamin" target="_blank" rel="noopener">Regulaminie</a> i
+              <a href="#faq" data-bs-dismiss="modal">FAQ</a>.
+            </div>
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="consent-terms">
+              <label class="form-check-label small" for="consent-terms">
+                Akceptuję <a href="/regulamin" target="_blank" rel="noopener">Regulamin</a> oraz
+                <a href="/polityka-prywatnosci" target="_blank" rel="noopener">Politykę prywatności</a>.
+              </label>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="consent-withdrawal">
+              <label class="form-check-label small" for="consent-withdrawal">
+                Chcę otrzymać plik od razu po opłaceniu i przyjmuję do wiadomości, że z chwilą
+                rozpoczęcia pobierania tracę prawo odstąpienia od umowy (standardowa zasada przy
+                zakupie treści cyfrowych, np. e-booków).
+              </label>
+            </div>
+            <div class="d-grid">
+              <button type="button" class="btn btn-primary" id="consent-continue" disabled>
+                Przejdź do płatności
+              </button>
+            </div>
+          </div>
+
+          <!-- Widok płatności -->
+          <div id="checkout-pay" class="d-none">
+            <div id="checkout-loading" class="text-center text-secondary py-4">
+              <div class="spinner-border spinner-border-sm me-2" role="status"></div>Ładowanie formularza płatności…
+            </div>
+
+            <div id="checkout-container"></div>
+
+            <p class="text-secondary small mt-3 mb-0">
+              <i class="bi bi-shield-lock me-1"></i>Płatność obsługuje Stripe (BLIK, Przelewy24, karta).
+              Plik pobierzesz od razu po potwierdzeniu płatności.
+            </p>
+          </div>
+
+          <!-- Widok wyniku (po zamknięciu płatności zostajemy w tym samym modalu) -->
+          <div id="checkout-result" class="d-none">
+            <div id="result-pending" class="text-center py-4 d-none">
+              <div class="spinner-border text-primary" role="status"></div>
+              <h2 class="h6 mt-3 mb-1">Czekamy na potwierdzenie płatności</h2>
+              <p class="text-secondary small mb-0">Potwierdź płatność w aplikacji banku — ten widok odświeży się sam.</p>
+            </div>
+
+            <div id="result-paid" class="d-none">
+              <div class="text-center mb-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size:2.5rem"></i>
+                <h2 class="h5 mt-2 mb-0">Płatność potwierdzona</h2>
+              </div>
+
+              <dl class="row small mb-3">
+                <dt class="col-sm-5 text-secondary fw-normal">Numer zamówienia (do reklamacji)</dt>
+                <dd class="col-sm-7"><code id="result-payment-intent">—</code></dd>
+              </dl>
+
+              <div class="d-grid mb-3">
+                <a href="#" class="btn btn-primary btn-lg" id="result-download-btn">
+                  <i class="bi bi-download me-2"></i>Pobierz plik
+                </a>
+              </div>
+
+              <label class="form-label small text-secondary mb-1">Link do pobrania (możesz go skopiować i zachować)</label>
+              <div class="input-group input-group-sm mb-2">
+                <input type="text" class="form-control font-monospace" id="result-link" readonly>
+                <button class="btn btn-outline-secondary" type="button" id="result-copy-btn">
+                  <i class="bi bi-clipboard me-1"></i>Kopiuj
+                </button>
+              </div>
+              <p class="text-secondary small mb-2">Link działa przez 24 godziny od zakupu (do 10 pobrań).
+                Potwierdzenie wysłaliśmy też na Twój e-mail.</p>
+              <p class="text-secondary small mb-0">
+                <i class="bi bi-info-circle me-1"></i>Plik wyłącznie do użytku własnego (bez edycji,
+                upubliczniania i odsprzedaży). Rozpoczęcie pobierania oznacza utratę prawa odstąpienia.
+                Reklamacje: <a href="mailto:<%= seller.email %>"><%= seller.email %></a> z numerem zamówienia.
+              </p>
+            </div>
+
+            <div id="result-failed" class="d-none text-center py-4">
+              <i class="bi bi-x-circle-fill text-danger" style="font-size:2.5rem"></i>
+              <h2 class="h5 mt-2 mb-1">Płatność nie doszła do skutku</h2>
+              <p class="text-secondary small mb-0">Nie pobraliśmy żadnych środków. Zamknij to okno i spróbuj ponownie.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

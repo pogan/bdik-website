@@ -1,0 +1,37 @@
+# Baza Danych Instytucji Kultury (BDIK)
+
+> Baza kontaktowa 2 200+ polskich instytucji kultury (domy kultury, centra kultury,
+> ośrodki kultury, biblioteki publiczne) z 16 województw. Dane pochodzą z publicznych
+> rejestrów (KRS, REGON/GUS) i ręcznej weryfikacji. Serwis pozwala bezpłatnie
+> przeglądać i filtrować bazę, a jednorazowo kupić eksport (CSV/XLSX/PDF) z pełnymi
+> danymi kontaktowymi (telefon, e-mail, WWW, REGON).
+
+Odbiorcy: artyści, zespoły muzyczne i teatralne, animatorzy kultury oraz organizatorzy
+koncertów, wystaw i warsztatów, którzy szukają kontaktu do domów kultury i bibliotek
+w Polsce w celu zaproponowania współpracy.
+
+## Zakres danych
+
+- Ponad 2 200 instytucji: domy kultury, centra kultury, ośrodki kultury, biblioteki publiczne.
+- Wszystkie 16 województw Polski.
+- Pola: nazwa, pełny adres (województwo/powiat/gmina/miejscowość/ulica/kod pocztowy),
+  telefon, e-mail, strona WWW, REGON (eksport płatny dodaje NIP, formę prawną, kod PKD).
+- Lokalizacja i nazwa instytucji są dostępne bezpłatnie w przeglądarce bazy; pełne dane
+  kontaktowe (telefon/e-mail/WWW) wymagają zakupu eksportu.
+- Dane aktualizowane cyklicznie z rejestrów publicznych i ręcznego uzupełniania.
+
+## Licencjonowanie / cennik
+
+Model: jednorazowy zakup eksportu (bez abonamentu, bez rejestracji), płatny wyłącznie
+za rekordy z co najmniej jednym kanałem kontaktu. Cena zależy od liczby rekordów w
+wybranym zakresie (progi kaskadowe, im więcej rekordów, tym niższa cena za rekord).
+Płatność: BLIK, Przelewy24, karta (Stripe). Licencja obejmuje użytek własny.
+
+## Strony
+
+- Przeglądarka bazy i cennik: /baza
+- Baza wg województwa: /baza/wojewodztwo/{slug}
+- Baza wg typu instytucji: /baza/typ/{slug}
+- O nas / metodologia danych: /o-nas
+- Regulamin: /regulamin
+- Polityka prywatności: /polityka-prywatnosci

@@ -1,0 +1,43 @@
+<%
+  // Strona "o nas" / metodologia - E-E-A-T (kto stoi za bazą, skąd dane, jak
+  // są weryfikowane). dataUpdatedAt i totalInstitutions przekazuje trasa
+  // GET /o-nas (routes/pages.js), tak samo jak /baza dostaje je do FAQ/hero -
+  // ta sama liczba wszędzie, żeby się nie rozjeżdżała.
+%>
+<h1 class="h3 mb-1">O nas</h1>
+<p class="text-secondary">Kto prowadzi Bazę Danych Instytucji Kultury i skąd pochodzą dane.</p>
+
+<h2 class="h5 mt-4">Czym jest BDIK</h2>
+<p>Baza Danych Instytucji Kultury to serwis dla artystów, zespołów, animatorów kultury i
+  organizatorów wydarzeń, którzy szukają kontaktu do domów kultury, centrów kultury,
+  ośrodków kultury i bibliotek publicznych w Polsce - np. żeby zaproponować koncert, wystawę
+  czy warsztaty. Bazę można bezpłatnie przeglądać i filtrować; jednorazowa opłata dotyczy
+  wyłącznie eksportu pełnych danych kontaktowych.</p>
+
+<h2 class="h5 mt-4">Kto prowadzi serwis</h2>
+<p>Serwis prowadzi <strong><%= seller.name %></strong><% if (seller.address) { %>, <%= seller.address %><% } %><% if (seller.nip) { %>, NIP <%= seller.nip %><% } %>.
+  Pytania, uwagi do danych i zgłoszenia dotyczące konkretnych rekordów przyjmujemy pod adresem
+  <a href="mailto:<%= seller.email %>"><%= seller.email %></a> - odpowiadamy osobiście, nie
+  przez automatyczny formularz.</p>
+
+<h2 class="h5 mt-4">Skąd pochodzą dane i jak są weryfikowane</h2>
+<p>Punktem wyjścia są publiczne rejestry: Krajowy Rejestr Sądowy (KRS) oraz REGON/GUS, gdzie
+  samorządowe instytucje kultury mają obowiązek się rejestrować. Same rejestry nie zawierają
+  jednak kompletnych danych kontaktowych (telefonu, e-maila, strony WWW), dlatego każdy rekord
+  jest dodatkowo ręcznie uzupełniany i weryfikowany na podstawie strony internetowej danej
+  instytucji, zanim trafi do bazy.</p>
+<p>Baza obejmuje obecnie <strong><%= totalInstitutions %></strong> instytucji z 16 województw.
+  Ostatnia aktualizacja: <strong><%= dataUpdatedAt %></strong>. Rekordy bez pełnych danych
+  kontaktowych zostają w bazie oznaczone jako takie i nie są wliczane do ceny eksportu.</p>
+
+<h2 class="h5 mt-4">Poprawki i zgłoszenia (opt-out)</h2>
+<p>Jeśli reprezentujesz instytucję z bazy i dane są nieaktualne albo chcesz, żeby rekord został
+  usunięty, napisz na <a href="mailto:<%= seller.email %>"><%= seller.email %></a>, podając
+  nazwę instytucji i - jeśli to możliwe - numer REGON. Zgłoszenia o usunięcie realizujemy
+  trwale, także wobec kolejnych aktualizacji danych (szczegóły w
+  <a href="/polityka-prywatnosci#dane-w-bazie">Polityce prywatności</a>).</p>
+
+<h2 class="h5 mt-4">Zasady korzystania z bazy</h2>
+<p>Model sprzedaży, zakres licencji i zasady zwrotów opisuje <a href="/regulamin">Regulamin</a>.
+  W skrócie: płatność jednorazowa, bez abonamentu, licencja na użytek własny bez odsprzedaży i
+  publicznego udostępniania pliku.</p>

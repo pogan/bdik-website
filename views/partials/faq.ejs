@@ -1,0 +1,21 @@
+  <section class="faq" id="faq">
+    <div class="container">
+      <h2 class="pricing-title mb-1">Najczęstsze pytania</h2>
+      <p class="pricing-lead mb-4">Wszystko, co warto wiedzieć przed zakupem eksportu.</p>
+      <div class="accordion" id="faq-accordion">
+        <% faq.forEach((item, i) => { %>
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                      data-bs-target="#faq-item-<%= i %>" aria-expanded="false" aria-controls="faq-item-<%= i %>">
+                <%= item.q %>
+              </button>
+            </h3>
+            <div id="faq-item-<%= i %>" class="accordion-collapse collapse" data-bs-parent="#faq-accordion">
+              <div class="accordion-body"><%= item.a %></div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </section>

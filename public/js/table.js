@@ -36,6 +36,14 @@
   // więc dla pozostałych użytkowników cała ta gałąź jest martwa.
   const ADMIN_VIEW = Array.isArray(window.BDIK_ADMIN_VIEW) ? window.BDIK_ADMIN_VIEW : null;
 
+  // Wstępne zawężenie na stronach segmentów (/baza/wojewodztwo/:slug,
+  // /baza/typ/:slug) - serwer wstawia np. { voivodeship: 'MAZOWIECKIE' } albo
+  // { type: 'biblioteki' }. Pola filtrów zostają aktywne (nie disabled) - to
+  // punkt wejścia, nie twardy limit.
+  const INITIAL_FILTERS = window.BDIK_INITIAL_FILTERS && typeof window.BDIK_INITIAL_FILTERS === 'object'
+    ? window.BDIK_INITIAL_FILTERS
+    : {};
+
   const state = {
     voivodeship: '',
     county: '',
@@ -43,6 +51,8 @@
     locality: '',
     // Filtr "tylko z danymi kontaktowymi" (any/phone/email/website albo '').
     contact: '',
+    // Filtr typu instytucji (domy-kultury/centra-kultury/osrodki-kultury/biblioteki albo '').
+    type: '',
     q: '',
     sort: 'name',
     order: 'asc',
@@ -112,6 +122,7 @@
       if (value) params.set(key, value);
     }
     if (state.contact) params.set('contact', state.contact);
+    if (state.type) params.set('type', state.type);
     if (state.q) params.set('q', state.q);
     params.set('sort', state.sort);
     params.set('order', state.order);
@@ -264,6 +275,7 @@
       if (state[key]) selection[key] = state[key];
     }
     if (state.contact) selection.contact = state.contact;
+    if (state.type) selection.type = state.type;
     // Filtry administratora też zawężają plik - inaczej eksport obejmowałby
     // szerszy zakres, niż widać w tabeli.
     for (const [key, value] of Object.entries(state.admin)) {
@@ -460,6 +472,13 @@
       fetchResults();
     });
 
+    document.getElementById('f-type').addEventListener('change', (e) => {
+      trackFilterChange();
+      state.type = e.target.value;
+      state.page = 1;
+      fetchResults();
+    });
+
     document.getElementById('f-search').addEventListener('input', (e) => {
       trackFilterChange();
       clearTimeout(searchDebounce);
@@ -474,9 +493,11 @@
       HIERARCHY.forEach((level) => { state[level] = ''; });
       state.q = '';
       state.contact = '';
+      state.type = '';
       state.page = 1;
       document.getElementById('f-search').value = '';
       document.getElementById('f-contact').value = '';
+      document.getElementById('f-type').value = '';
       resetAdminFilters();
       await loadFacet('voivodeship');
       await refreshFacetsBelow('voivodeship');
@@ -531,6 +552,12 @@
   }
 
   async function init() {
+    // Scalone PRZED wczytaniem słowników - loadFacet('voivodeship') czyta
+    // state.voivodeship, żeby zaznaczyć właściwą opcję i zawęzić kolejne
+    // poziomy hierarchii (patrz refreshFacetsBelow/loadFacet).
+    Object.assign(state, INITIAL_FILTERS);
+    if (state.type) document.getElementById('f-type').value = state.type;
+
     attachSampleHandler();
     attachLeadHandler();
     if (ADMIN_VIEW) {

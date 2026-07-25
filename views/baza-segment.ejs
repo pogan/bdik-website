@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <%- include('partials/head') %>
+</head>
+<body>
+  <%- include('partials/nav', { user: typeof user !== 'undefined' ? user : null }) %>
+
+  <header class="hero">
+    <div class="container hero-inner">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="/baza">Baza</a></li>
+          <li class="breadcrumb-item active" aria-current="page"><%= segment.label %></li>
+        </ol>
+      </nav>
+      <div class="row">
+        <div class="col-lg-9">
+          <% if (kind === 'voivodeship') { %>
+            <h1>Domy kultury, biblioteki i centra kultury w województwie <%= segment.locative %></h1>
+            <p class="hero-lead">
+              W województwie <%= segment.locative %> działa <strong><%= total %></strong> instytucji kultury.
+              <% if (coverage.total) { %>Spośród nich <strong><%= emailPct %>%</strong> ma podany adres e-mail.<% } %>
+              <% if (localities.length) { %>
+                Znajdziesz je m.in. w: <%= localities.join(', ') %><% if (total > localities.length) { %> i innych miejscowościach<% } %>.
+              <% } %>
+            </p>
+          <% } else { %>
+            <h1><%= segment.label %> w Polsce — baza kontaktów</h1>
+            <p class="hero-lead">
+              W bazie jest <strong><%= total %></strong> <%= segment.plural %> z całej Polski, ze wszystkich 16 województw.
+              <% if (voivodeshipBreakdown && voivodeshipBreakdown.length) { %>
+                Najwięcej w województwie <%= voivodeshipBreakdown[0].label.toLowerCase() %> (<%= voivodeshipBreakdown[0].count %>).
+              <% } %>
+              <% if (coverage.total) { %><strong><%= emailPct %>%</strong> ma podany adres e-mail.<% } %>
+            </p>
+          <% } %>
+          <div class="hero-cta">
+            <a href="#tool" class="btn btn-hero btn-lg"><i class="bi bi-search me-2"></i>Przeglądaj i eksportuj</a>
+            <a href="#cennik" class="btn btn-hero-ghost btn-lg">Cennik</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <% if (kind === 'voivodeship' && typeBreakdown && typeBreakdown.length) { %>
+  <section class="container py-4">
+    <h2 class="h5 mb-3">Instytucje wg typu w województwie <%= segment.locative %></h2>
+    <div class="row g-2">
+      <% typeBreakdown.forEach((t) => { %>
+        <div class="col-6 col-md-3">
+          <a class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center" href="/baza/typ/<%= t.slug %>">
+            <span><%= t.label %></span><span class="badge bg-secondary-subtle text-secondary-emphasis"><%= t.count %></span>
+          </a>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+  <% } %>
+
+  <% if (kind === 'type' && voivodeshipBreakdown && voivodeshipBreakdown.length) { %>
+  <section class="container py-4">
+    <h2 class="h5 mb-3">Najwięcej w województwach</h2>
+    <div class="row g-2">
+      <% voivodeshipBreakdown.forEach((v) => { %>
+        <div class="col-6 col-md-3">
+          <a class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center" href="/baza/wojewodztwo/<%= v.slug %>">
+            <span><%= v.label %></span><span class="badge bg-secondary-subtle text-secondary-emphasis"><%= v.count %></span>
+          </a>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+  <% } %>
+
+  <% if (sample && sample.length) { %>
+  <section class="container py-4">
+    <h2 class="h5 mb-3">Przykładowe instytucje</h2>
+    <div class="table-shell table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead>
+          <tr><th>Nazwa</th><th>Województwo</th><th>Powiat</th><th>Miejscowość</th></tr>
+        </thead>
+        <tbody>
+          <% sample.forEach((row) => { %>
+            <tr>
+              <td><%= row.name %></td>
+              <td><%= row.voivodeship %></td>
+              <td><%= row.county %></td>
+              <td><%= row.locality %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% if (total > sample.length) { %>
+      <p class="text-secondary small mt-2 mb-0">
+        To pierwsze <%= sample.length %> z <%= total %> instytucji (nazwa i lokalizacja są zawsze bezpłatne) —
+        pełną listę z filtrami, danymi kontaktowymi i eksportem znajdziesz niżej.
+      </p>
+    <% } %>
+  </section>
+  <% } %>
+
+  <%- include('partials/pricing') %>
+
+  <%- include('partials/tool') %>
+
+  <p class="container text-secondary small">
+    Masz pytania dotyczące zakupu i licencji? Zobacz <a href="/baza#faq">najczęstsze pytania</a>.
+  </p>
+
+  <%- include('partials/browse-links', {
+    heading: 'Zobacz też',
+    anchorId: null,
+    voivodeshipsList,
+    institutionTypes,
+    excludeVoivodeshipSlug: kind === 'voivodeship' ? segment.slug : null,
+    excludeTypeSlug: kind === 'type' ? segment.slug : null,
+  }) %>
+
+  <%- include('partials/payment-modal') %>
+
+  <%- include('partials/footer') %>
+
+  <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    window.BDIK_STRIPE = {
+      publishableKey: <%- JSON.stringify(stripePublishableKey || '') %>,
+      configured: <%- JSON.stringify(Boolean(stripeConfigured)) %>,
+    };
+    // Null dla wszystkich poza administratorem - table.js renderuje wtedy
+    // dotychczasowy, wąski zestaw kolumn.
+    window.BDIK_ADMIN_VIEW = <%- JSON.stringify(adminView || null) %>;
+    // Wstępne zawężenie narzędzia do tego segmentu (patrz public/js/table.js) -
+    // pole filtru zostaje aktywne, to punkt wejścia, nie twardy limit.
+    window.BDIK_INITIAL_FILTERS = <%- JSON.stringify(initialFilters || {}) %>;
+  </script>
+  <script src="/js/checkout.js"></script>
+  <script src="/js/table.js"></script>
+  <script src="/js/cookies.js"></script>
+</body>
+</html>

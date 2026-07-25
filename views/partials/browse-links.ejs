@@ -1,0 +1,30 @@
+<%
+  // Wspólny blok linków do stron województw i typów instytucji - używany jako
+  // pełny indeks na /baza (task "Przeglądaj wg regionu i typu") oraz jako
+  // linkowanie krzyżowe na stronach segmentów (views/baza-segment.ejs, z
+  // pominięciem własnej strony). To główny mechanizm linkowania wewnętrznego
+  // do nowych, programistycznie generowanych stron - bez tego byłyby osiągalne
+  // wyłącznie przez sitemap.xml, nie przez realne linki na stronie.
+  const excludeV = typeof excludeVoivodeshipSlug !== 'undefined' ? excludeVoivodeshipSlug : null;
+  const excludeT = typeof excludeTypeSlug !== 'undefined' ? excludeTypeSlug : null;
+  const sectionId = typeof anchorId !== 'undefined' ? anchorId : null;
+%>
+<section class="container py-4"<% if (sectionId) { %> id="<%= sectionId %>"<% } %>>
+  <h2 class="h5 mb-3"><%= heading %></h2>
+  <p class="small text-secondary mb-2">Województwa</p>
+  <div class="row g-2 mb-3">
+    <% voivodeshipsList.filter((v) => v.slug !== excludeV).forEach((v) => { %>
+      <div class="col-6 col-md-3 col-lg-2">
+        <a class="btn btn-outline-secondary btn-sm w-100" href="/baza/wojewodztwo/<%= v.slug %>"><%= v.label %></a>
+      </div>
+    <% }) %>
+  </div>
+  <p class="small text-secondary mb-2">Typ instytucji</p>
+  <div class="row g-2">
+    <% institutionTypes.filter((t) => t.slug !== excludeT).forEach((t) => { %>
+      <div class="col-6 col-md-3">
+        <a class="btn btn-outline-secondary btn-sm w-100" href="/baza/typ/<%= t.slug %>"><%= t.label %></a>
+      </div>
+    <% }) %>
+  </div>
+</section>

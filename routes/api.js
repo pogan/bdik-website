@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const db = require('../db');
 const { queryInstitutions, countWithContact, coverageCounts, facetValues, FILTERABLE_COLUMNS, ADMIN_FILTERABLE_COLUMNS, CONTACT_FILTER_VALUES } = require('../lib/query');
+const { TYPE_FILTER_VALUES } = require('../lib/institutionTypes');
 const { priceBreakdown, formatAmount, formatPricePerRow } = require('../lib/pricing');
 const { isAdmin, fieldsForRequest } = require('../lib/projection');
 const { normalizeSelection, EXPORT_FORMATS } = require('../lib/orders');
@@ -36,6 +37,11 @@ function parseFilters(query, req) {
   // odpadają już tutaj (buildWhere i tak by je zignorował).
   if (typeof query.contact === 'string' && CONTACT_FILTER_VALUES.includes(query.contact)) {
     filters.contact = query.contact;
+  }
+  // Publiczny filtr typu instytucji (dom/centrum/ośrodek kultury, biblioteka) -
+  // ten sam wzorzec co 'contact' powyżej.
+  if (typeof query.type === 'string' && TYPE_FILTER_VALUES.includes(query.type)) {
+    filters.type = query.type;
   }
   return filters;
 }

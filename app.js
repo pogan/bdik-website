@@ -8,21 +8,18 @@ const session = require('express-session');
 const db = require('./db');
 const SqliteSessionStore = require('./lib/sqliteSessionStore');
 const { passport } = require('./lib/auth');
-const { publishableKey, stripeConfigured } = require('./lib/stripe');
 const { isAdmin } = require('./lib/projection');
-const { adminViewSpec } = require('./lib/adminTable');
 const { seller } = require('./lib/sellerInfo');
-const { lastDataUpdate } = require('./lib/dataFreshness');
-const { TERMS_VERSION, isKnownTermsVersion, termsViewName } = require('./lib/legal');
+const { TERMS_VERSION } = require('./lib/legal');
 const { baseUrl, canonicalUrl } = require('./lib/seo');
+const { organizationSchema, websiteSchema } = require('./lib/structuredData');
 const { recordVisit } = require('./lib/visits');
-const { TIERS, MIN_AMOUNT, priceBreakdown, breakdownFromNet, formatAmount } = require('./lib/pricing');
-const { countInstitutions, countWithContact } = require('./lib/query');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const paymentRoutes = require('./routes/payments');
 const webhookRoutes = require('./routes/webhooks');
 const adminRoutes = require('./routes/admin');
+const { router: pagesRoutes, PUBLIC_PAGES } = require('./routes/pages');
 
 const app = express();
 
@@ -70,12 +67,22 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Organization/WebSite i URL obrazka OG są takie same dla każdego żądania -
+// liczymy raz przy starcie procesu zamiast w każdym przebiegu middleware.
+const ORG_STRUCTURED_DATA = [organizationSchema(), websiteSchema()];
+const OG_IMAGE_URL = `${baseUrl()}/images/og-cover.png`;
+
 // Dane wspólne dla wszystkich widoków: flaga admina (link do panelu w nav),
-// dane sprzedawcy (stopka) i aktualna wersja regulaminu.
+// dane sprzedawcy (stopka), aktualna wersja regulaminu i dane strukturalne
+// Organization/WebSite (patrz partials/head.ejs) - te dwa typy schema.org mają
+// sens na każdej publicznej stronie, nie tylko tam, gdzie trasa jawnie przekazuje
+// `structuredData` (Dataset/FAQPage na /baza itp.).
 app.use((req, res, next) => {
   res.locals.isAdmin = isAdmin(req);
   res.locals.seller = seller;
   res.locals.termsVersion = TERMS_VERSION;
+  res.locals.orgStructuredData = ORG_STRUCTURED_DATA;
+  res.locals.ogImageUrl = OG_IMAGE_URL;
   next();
 });
 
@@ -107,15 +114,9 @@ app.use((req, res, next) => {
 
 app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 
-// robots.txt / sitemap.xml zbudowane z tej samej listy publicznych,
-// indeksowalnych tras co render'y poniżej - trzymamy je razem, żeby dodanie
-// nowej strony publicznej nie wymagało pamiętania o osobnym pliku.
-const PUBLIC_PAGES = [
-  { path: '/baza', changefreq: 'daily', priority: '1.0' },
-  { path: '/regulamin', changefreq: 'monthly', priority: '0.3' },
-  { path: '/polityka-prywatnosci', changefreq: 'monthly', priority: '0.3' },
-];
-
+// robots.txt / sitemap.xml zbudowane z PUBLIC_PAGES (routes/pages.js) - tej
+// samej listy publicznych, indeksowalnych tras co render'y w tamtym pliku,
+// żeby dodanie nowej strony publicznej nie wymagało pamiętania o osobnym pliku.
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain').send(
     [
@@ -138,6 +139,7 @@ app.get('/sitemap.xml', (req, res) => {
     (page) =>
       `  <url>\n` +
       `    <loc>${canonicalUrl(page.path)}</loc>\n` +
+      `    <lastmod>${page.lastmod}</lastmod>\n` +
       `    <changefreq>${page.changefreq}</changefreq>\n` +
       `    <priority>${page.priority}</priority>\n` +
       `  </url>`
@@ -159,182 +161,7 @@ app.get('/', (req, res) => {
   res.redirect(301, '/baza');
 });
 
-// Sekcja #cennik na stronie bazy renderuje się z tych samych stałych, którymi
-// serwer faktycznie wycenia eksport (lib/pricing.js) - cennik nie może się
-// rozjechać z pobieraną kwotą. Przykłady liczone priceBreakdown, kwoty brutto.
-function cennikView() {
-  const example = (label, note, rows) => {
-    const bd = priceBreakdown(rows);
-    return { label, note, rows, grossLabel: formatAmount(bd.gross) };
-  };
-  // Płatne są tylko rekordy z danymi kontaktowymi (patrz routes/payments.js),
-  // więc przykład "cała baza" wycenia rekordy z kontaktem, nie wszystkie wiersze.
-  const totalRows = countInstitutions(db);
-  const billableRows = countWithContact(db);
-  return {
-    tiers: TIERS.map((t, i) => ({
-      from: i === 0 ? 1 : TIERS[i - 1].upTo + 1,
-      upTo: t.upTo === Infinity ? null : t.upTo,
-      perRowLabel: formatAmount(t.perRow),
-    })),
-    minGrossLabel: formatAmount(breakdownFromNet(MIN_AMOUNT).gross),
-    examples: [
-      example('Jedna miejscowość', 'np. wybrane miasto, ok. 25 rekordów z kontaktem', 25),
-      example('Całe województwo', 'ok. 150 rekordów z kontaktem', 150),
-      example('Cała baza', `${totalRows} instytucji, płatne ${billableRows} z kontaktem`, billableRows),
-    ],
-  };
-}
-
-// FAQ zdefiniowane raz: te same pytania renderują akordeon na stronie bazy
-// oraz dane strukturalne FAQPage (schema.org) - treść nie może się rozjechać.
-function faqView(dataUpdatedAt) {
-  return [
-    {
-      q: 'Skąd pochodzą dane i jak często są aktualizowane?',
-      a:
-        'Dane pochodzą z publicznych rejestrów (m.in. KRS, REGON/GUS i rejestry instytucji kultury) ' +
-        'i są dodatkowo ręcznie uzupełniane o telefony, adresy e-mail i strony WWW ze stron samych ' +
-        `instytucji. Ostatnia aktualizacja bazy: ${dataUpdatedAt}.`,
-    },
-    {
-      q: 'Co dokładnie zawiera kupiony plik?',
-      a:
-        'Każdy rekord to jedna instytucja: nazwa, pełny adres (województwo, powiat, gmina, miejscowość, ' +
-        'ulica, kod pocztowy), telefon, e-mail, strona WWW i REGON. Eksport CSV i XLSX zawiera dodatkowo ' +
-        'm.in. NIP, formę prawną, kod PKD i daty rozpoczęcia działalności. Przed zakupem możesz pobrać ' +
-        'bezpłatną próbkę PDF z 16 prawdziwymi rekordami.',
-    },
-    {
-      q: 'Czy płacę za rekordy, które nie mają danych kontaktowych?',
-      a:
-        'Nie. Cena liczona jest wyłącznie za rekordy z co najmniej jednym kanałem kontaktu (telefon, ' +
-        'e-mail lub WWW). Rekordy bez kontaktu trafiają do pliku gratis - dokładny podział widzisz ' +
-        'przed płatnością.',
-    },
-    {
-      q: 'Czy dostanę fakturę VAT?',
-      a:
-        'Tak. Przy płatności możesz podać NIP i dane firmy; fakturę wystawiamy na życzenie - wystarczy ' +
-        'po zakupie wysłać e-mail z numerem zamówienia (adres znajdziesz w stopce strony i w ' +
-        'potwierdzeniu zakupu).',
-    },
-    {
-      q: 'Do czego mogę używać kupionej bazy?',
-      a:
-        'Do własnych działań: kontaktu z instytucjami, planowania tras koncertowych, wystaw czy ' +
-        'warsztatów oraz wysyłki własnych ofert. Licencja obejmuje użytek własny - bez odsprzedaży ' +
-        'i publicznego udostępniania pliku. Szczegóły w Regulaminie.',
-    },
-    {
-      q: 'Jak płacę i kiedy dostanę plik?',
-      a:
-        'Płatność obsługuje Stripe: BLIK, Przelewy24 lub karta. Plik pobierasz od razu po potwierdzeniu ' +
-        'płatności; link do pobrania działa 24 godziny (do 10 pobrań) i wysyłamy go też na Twój e-mail.',
-    },
-    {
-      q: 'Co jeśli mam zastrzeżenia do kupionego pliku?',
-      a:
-        'Napisz na adres e-mail podany w stopce, dołączając numer zamówienia z potwierdzenia. ' +
-        'Każdą reklamację rozpatrujemy indywidualnie zgodnie z Regulaminem.',
-    },
-  ];
-}
-
-app.get('/baza', (req, res) => {
-  const description =
-    'Baza ponad 2 200 domów kultury, bibliotek i centrów kultury w Polsce. ' +
-    'Filtruj po województwie, powiecie, gminie i miejscowości, sprawdź dane ' +
-    'kontaktowe i wyeksportuj listę do CSV, XLSX lub PDF.';
-  const faq = faqView(lastDataUpdate());
-  res.render('baza', {
-    cennik: cennikView(),
-    faq,
-    user: req.user || null,
-    stripePublishableKey: publishableKey,
-    stripeConfigured,
-    // Rozszerzony widok (wszystkie kolumny + filtr na każdej z nich) dostaje
-    // wyłącznie administrator; dla reszty spec jest pusty, więc tabela zostaje
-    // taka jak dotąd.
-    adminView: isAdmin(req) ? adminViewSpec() : null,
-    dataUpdatedAt: lastDataUpdate(),
-    title: 'Baza Danych Instytucji Kultury — kontakty do domów kultury i bibliotek',
-    description,
-    robots: 'index, follow',
-    canonicalUrl: canonicalUrl('/baza'),
-    structuredData: [
-      {
-        '@context': 'https://schema.org',
-        '@type': 'Dataset',
-        name: 'Baza Danych Instytucji Kultury',
-        description,
-        url: canonicalUrl('/baza'),
-        license: canonicalUrl('/regulamin'),
-        isAccessibleForFree: false,
-        keywords: ['domy kultury', 'biblioteki', 'centra kultury', 'instytucje kultury', 'kontakty'],
-        creator: {
-          '@type': 'Organization',
-          name: seller.name,
-          email: seller.email,
-          url: baseUrl(),
-        },
-      },
-      {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: faq.map((item) => ({
-          '@type': 'Question',
-          name: item.q,
-          acceptedAnswer: { '@type': 'Answer', text: item.a },
-        })),
-      },
-    ],
-  });
-});
-
-// Strony prawne. Regulamin obowiązujący pod /regulamin; konkretną (także
-// archiwalną) wersję pod /regulamin/:wersja - potrzebne, bo e-mail potwierdzający
-// linkuje do wersji z chwili zakupu (orders.terms_version). Wszystkie wersje
-// canonicalizują na /regulamin, żeby archiwalne treści (niemal identyczne)
-// nie konkurowały ze sobą o indeksację jako duplikaty.
-app.get('/regulamin', (req, res) => {
-  res.render('legal', {
-    user: req.user || null,
-    document: termsViewName(TERMS_VERSION),
-    documentVersion: TERMS_VERSION,
-    title: 'Regulamin — Baza Danych Instytucji Kultury',
-    description: 'Regulamin świadczenia usług i sprzedaży eksportów danych w serwisie Baza Danych Instytucji Kultury.',
-    robots: 'index, follow',
-    canonicalUrl: canonicalUrl('/regulamin'),
-  });
-});
-
-app.get('/regulamin/:wersja', (req, res) => {
-  if (!isKnownTermsVersion(req.params.wersja)) {
-    return res.status(404).send('Nie znaleziono tej wersji regulaminu.');
-  }
-  return res.render('legal', {
-    user: req.user || null,
-    document: termsViewName(req.params.wersja),
-    documentVersion: req.params.wersja,
-    title: `Regulamin (wersja z ${req.params.wersja}) — Baza Danych Instytucji Kultury`,
-    description: 'Archiwalna wersja regulaminu serwisu Baza Danych Instytucji Kultury.',
-    robots: 'index, follow',
-    canonicalUrl: canonicalUrl('/regulamin'),
-  });
-});
-
-app.get('/polityka-prywatnosci', (req, res) => {
-  res.render('legal', {
-    user: req.user || null,
-    document: 'legal/polityka-prywatnosci',
-    documentVersion: null,
-    title: 'Polityka prywatności — Baza Danych Instytucji Kultury',
-    description: 'Polityka prywatności i informacje o plikach cookies w serwisie Baza Danych Instytucji Kultury.',
-    robots: 'index, follow',
-    canonicalUrl: canonicalUrl('/polityka-prywatnosci'),
-  });
-});
+app.use('/', pagesRoutes);
 
 app.use((req, res) => {
   res.status(404).render('404', { user: req.user || null });
