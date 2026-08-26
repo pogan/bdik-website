@@ -11,3 +11,14 @@ data/*.sqlite-wal
 # Kopie zapasowe wygenerowanych eksportow (backup plikow zamowien)
 data/exports/
 .claude/worktrees/
+
+# Prawdziwy zbiór danych źródłowych (produkt płatny) i jego pochodne — trzymane
+# lokalnie/na serwerze, nigdy w publicznym repo. Patrz sources/__fixtures__ dla
+# syntetycznych danych do developmentu.
+kk_claude_data/
+data/enrich_report.json
+data/enrich_review.json
+
+# Dokumenty zawierające prawdziwe dane osobowe właściciela (adres, telefon, NIP)
+docs/wniosek-regon.md
+docs/*Wniosek*REGON*.pdf

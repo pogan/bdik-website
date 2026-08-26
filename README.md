@@ -1,240 +1,210 @@
-# Baza Danych Instytucji Kultury (bdik-website) - MVP
+# BDIK — Baza Danych Instytucji Kultury
 
-Aplikacja udostępniająca bazę polskich instytucji kultury. Publiczny podgląd
-(nazwa, województwo, miejscowość) jest darmowy; pełne dane kontaktowe
-(telefon, e-mail, adres, REGON/NIP...) wymagają logowania Google z allowlisty.
-Eksport danych (CSV/XLSX/PDF) jest **płatny** - patrz "Płatności (Stripe)".
+A commercial Node/Express web app that sells structured contact-data exports of
+Polish cultural institutions (theatres, libraries, museums, community culture
+centres, etc.), searchable and filterable by voivodeship (województwo), county,
+commune and institution type. The audience is artists, bands, event organisers
+and cultural animators who need a reliable, up-to-date way to reach hundreds of
+institutions at once instead of hand-collecting contact details.
 
-## ⚠️ Ostrzeżenie: nigdy nie otwieraj `druga_baza_danych.csv` w Excelu
+Browsing and basic identification (name, voivodeship, locality) are free. Full
+contact data (phone, e-mail, website, REGON/NIP) requires a Google-login
+allowlist account. A paid CSV/XLSX/PDF export is gated behind Stripe Checkout.
+This is a real payments product — it moves real money, issues data customers
+have paid for, and has to be *correct*, not just functional: webhook events
+must be idempotent, VAT has to be broken out and reported correctly, and a
+paid file must survive being generated exactly once and being downloadable
+again if something fails midway. The design choices below are driven by that,
+not by generic CRUD-app conventions.
 
-Excel automatycznie obcina wiodące zera w kolumnie `Regon`, co psuje klucz
-główny całej bazy (REGON jest unikalny i służy do deduplikacji rekordów).
-Do podglądu/edycji danych źródłowych używaj edytora tekstu, `csvkit`, albo
-importuj kolumnę REGON jawnie jako tekst.
+## Why this project, technically
 
-## Wymagania
+This isn't a toy CRUD app with a payment button bolted on. It's a small
+end-to-end system with several components that each have a specific job:
 
-- Node.js 20+ (testowano na Node 24)
-- npm
+- an **ETL pipeline** (`etl/`, `sources/`) that ingests institution data from
+  multiple sources with different trust levels, deduplicates on REGON as the
+  natural key, and merges records by source priority (GUS > RIK > KRS > CEIDG
+  > seed) instead of blind overwrite;
+- a **field-gating layer** (`lib/projection.js`) that decides, at the SQL
+  column-selection level (not by filtering an already-fetched object), which
+  fields a given caller is allowed to see — so paid/contact data never leaves
+  the database for an unauthorized request in the first place;
+- a **pricing and payments layer** (Stripe Checkout + webhooks) where the
+  server is the sole source of truth for price and content, so nothing a
+  browser sends is ever trusted for money or data selection;
+- a **durable-delivery layer** (`lib/backup.js`) that guarantees a paid
+  customer's file survives beyond the original download link.
 
-## Instalacja
+## Payments: how it works, and why
+
+1. `POST /api/checkout/quote` — price quote. Row count comes from the
+   database (`countInstitutions`), price from `lib/pricing.js` (tiered, like
+   tax brackets: the more records, the cheaper each additional one). The
+   amount charged is **never** taken from the browser.
+2. `POST /api/checkout` — creates a `pending` order row and a Stripe Checkout
+   Session with an inline `price_data` line item (no pre-defined Stripe
+   products). The complete filter/selection criteria are persisted as JSON in
+   `orders.filters` at this point — this is what actually gets exported later,
+   never the URL query string the browser happens to send.
+3. `POST /webhooks/stripe` — the source of truth for payment state. Mounted
+   **before** `express.json()`, using `express.raw()`, because Stripe's
+   signature is an HMAC over the raw request body — a body that's been parsed
+   and re-serialized produces different bytes and fails verification.
+   Stripe delivers webhook events "at least once", so a `stripe_events` table
+   keyed on the event id makes processing idempotent: a redelivered event is
+   acknowledged with 200 but not reprocessed.
+4. `GET /platnosc?session_id=...` — the return page. BLIK and bank transfers
+   can settle asynchronously, so this page both polls order status and
+   actively re-syncs from Stripe (`syncOrderFromStripe`) in case the webhook
+   hasn't landed yet.
+5. `GET /pobierz/:token` — the actual gate. The file is generated from the
+   **criteria stored on the order at purchase time**, never from URL
+   parameters, so a buyer can't widen the scope of what they paid for after
+   the fact. The link expires after 7 days and is capped at a fixed number of
+   downloads.
+
+**VAT**: prices in `lib/pricing.js` are net; a Stripe `TaxRate` object (23%,
+Poland) is created once and reused (looked up by metadata marker, since
+Stripe tax rates can't be deleted, only deactivated), so the customer sees a
+proper net/VAT/gross breakdown on the Checkout page and receipt rather than a
+single opaque total.
+
+**Backup durability** (`lib/backup.js`): as soon as `markPaid` fires, the
+export file for that order is generated once and written to a private,
+non-`public/`-served directory, named after the Stripe PaymentIntent id (the
+same id used as the customer-facing download link and the complaint/refund
+reference). Regeneration is idempotent — if the file already exists,
+subsequent calls are a no-op — so a customer's paid file exists independent
+of the original download link's 7-day TTL/10-download cap, and independent of
+whether the original generation happened synchronously or was retried later.
+The write happens "fire and forget" right after webhook processing so a slow
+export never risks delaying Stripe's 200 response (which would trigger
+needless webhook retries).
+
+## Auth: Google OAuth + allowlist, not self-signup
+
+Login is Google OAuth (Passport) but deliberately **does not create accounts**.
+An email has to already exist in the `users` table (added by an operator via
+`scripts/add_user.js`) and be active before Google sign-in will succeed — this
+keeps "who can see contact-level data" as an explicit, auditable allowlist
+rather than open registration. Admin authorization (`lib/projection.js`,
+enforced again in `routes/admin.js`) is a double gate: a `role = 'admin'` row
+in the database, OR an email present in the `ADMIN_EMAILS` env var — the
+latter exists as a safety net so the operator retains admin access even if a
+database row's role gets misconfigured. `/admin/orders` and the admin file
+route are hard-gated behind this check for every request, not just the initial
+page load.
+
+## Data model
+
+SQLite (via `better-sqlite3`) with a schema (`db/schema.sql`) built around a
+single `institutions` table keyed on REGON, an `institution_optouts` table
+that implements GDPR Art. 21 right-to-object without letting the next ETL run
+silently reinstate an opted-out record, an `orders` table that is the single
+source of truth for what a buyer paid for and received, and a `stripe_events`
+table used purely for webhook idempotency. Visit/event tracking hashes IP
+addresses (SHA-256) rather than storing them raw.
+
+## Data enrichment agent
+
+`scripts/enrich_contacts.js` (`lib/enrich.js`) is a multi-phase pipeline that
+fills in missing/stale contact data for institutions that don't yet have a
+verified phone, e-mail or website: it re-checks existing URLs (repairing
+truncated sub-pages/subdomains), derives a likely website from an e-mail
+domain, scrapes an institution's own site and its "contact" sub-pages, and
+falls back to a search-engine lookup for records still missing data. Because
+this runs unattended against arbitrary third-party sites, accepting a new
+domain (a truncated subdomain, a search result, a redirect target) requires
+independent confirmation — locality/postal code match *and* a second
+identifier (a known phone, e-mail, street, or a distinctive name fragment) —
+because locality alone is too weak a signal (a city's own portal will always
+mention the city). It also decodes common e-mail obfuscation patterns
+(Cloudflare email-protection, `[at]`-style munging) and keeps an attempt log
+so an interrupted or search-rate-limited run resumes instead of restarting.
+
+## Tech stack
+
+- **Runtime**: Node.js 20+, Express 5
+- **Data**: SQLite (`better-sqlite3`), FTS5 for search, `express-session`
+  backed by a custom SQLite session store
+- **Auth**: Passport + `passport-google-oauth20`, DB-backed allowlist
+- **Payments**: Stripe (Checkout Sessions, webhooks, dynamic Tax Rates)
+- **Exports**: CSV, XLSX (`exceljs`), PDF (`pdfkit`)
+- **Email**: Nodemailer/SMTP for durable-medium purchase confirmations
+- **Views**: EJS + Bootstrap 5
+- **Hardening**: Helmet, `express-rate-limit`
+- **Process management**: PM2 (`ecosystem.config.js`)
+
+## Setup
 
 ```bash
 npm install
 cp .env.example .env
-# uzupełnij SESSION_SECRET oraz (opcjonalnie na start) GOOGLE_CLIENT_ID/SECRET
+# fill in at minimum SESSION_SECRET; Google/Stripe/SMTP are optional for local
+# browsing — the app boots without them and simply returns 503 on the routes
+# that need them (login, checkout, webhooks)
 ```
 
-## Wczytanie danych (ETL)
+Load sample institution data and run the test suite:
 
 ```bash
-npm run etl
+npm run etl     # loads + dedups institution records into data/bdik.sqlite
+npm test        # normalization, dedup/priority, field-gating, pricing,
+                # order lifecycle and webhook idempotency
 ```
 
-Wczytuje `kk_claude_data/druga_baza_danych.csv` (2229 instytucji) do
-`data/bdik.sqlite`, plus mocki źródeł RIK/GUS/KRS/CEIDG (`sources/*.js`,
-fixture'y w `sources/__fixtures__/`). Idempotentne - można uruchamiać
-wielokrotnie, nie tworzy duplikatów. REGON jest kluczem naturalnym rekordu;
-rekordy scalane są wg priorytetu źródeł GUS > RIK > KRS > CEIDG > seed
-(`etl/dedup.js`) - pole nadpisywane jest tylko gdy przychodząca wartość jest
-niepusta i źródło ma równy lub wyższy priorytet.
-
-## Agent uzupełniania danych kontaktowych
+Run locally:
 
 ```bash
-npm run enrich                      # pełny przebieg (zapisuje do bazy)
-node scripts/enrich_contacts.js --dry-run --limit 20   # próba bez zapisu
+npm run dev     # node --watch
 ```
 
-Cztery fazy: (1) weryfikacja istniejących adresów WWW z naprawą przez
-obcinanie podstron/subdomen, (2) wyprowadzenie brakującego WWW z domeny
-e-maila (pomija skrzynki publiczne typu gmail/wp), (3) uzupełnienie
-telefonu/e-maila ze strony instytucji i jej podstron "kontakt",
-(4) wyszukiwarka (DuckDuckGo) po nazwie i adresie pocztowym dla wpisów
-wciąż niekompletnych.
-
-Akceptacja obcej domeny (obcięta subdomena, wynik wyszukiwarki) wymaga
-twardego potwierdzenia treści: miejscowość/kod pocztowy ORAZ niezależny
-identyfikator instytucji (znany telefon, e-mail, ulica albo charakterystyczny
-człon nazwy niepochodzący od miejscowości) - sama miejscowość nie wystarcza,
-bo portal miasta zawsze ją zawiera. Dotyczy to także przekierowań na inny
-host (republika.pl -> onet.pl, domena gminy -> samorzad.gov.pl) - wtedy
-zapisywany jest pełny adres docelowy z podstroną, nie goły origin. Strony
-parkingowe ("domena na sprzedaż") są odrzucane wszędzie, a oryginalny adres
-dostaje ponowienie próby, żeby przejściowy timeout nie wysłał działającej
-strony do "naprawy". Gdy strona jest martwa, a kandydat jest powiązany
-treścią, lecz bez twardego identyfikatora (typowo strona gminy), agent
-nie zapisuje go sam: pyta w terminalu albo odkłada do kolejki przeglądu.
-
-E-maile za antyspamem: Cloudflare email-protection i wzorce [at]/[małpa]
-są odszyfrowywane automatycznie; nieodczytywalne trafiają do promptu
-(uruchomienie w terminalu) albo do kolejki `data/enrich_review.json`
-(uruchomienie nieinteraktywne). Każda zmiana ląduje ze starą wartością
-w raporcie `data/enrich_report.json`; martwe strony nie są kasowane,
-tylko raportowane. Provenance: źródło `web_enrich` w `institution_sources`.
-
-Faza 4 prowadzi dziennik prób (tabela `web_enrich_attempts`): każda
-ukończona próba wyszukiwania zapisuje się od razu, więc przebieg przerwany
-blokadą wyszukiwarki nie zaczyna następnym razem od zera - wpisy próbowane
-w ciągu ostatnich 14 dni są pomijane, a nietknięte idą pierwsze. Po blokadzie
-wystarczy odczekać i uruchomić `node scripts/enrich_contacts.js --only-search`.
-
-Flagi: `--dry-run` (bez zapisu), `--limit N` (ogranicza każdą fazę),
-`--no-search` / `--search-limit N` (faza 4), `--only-search` (pomija fazy 1-3),
-`--retry-search` (ignoruje dziennik prób), `--search-cooldown DNI`
-(domyślnie 14), `--concurrency N` (domyślnie 8), `--timeout MS`
-(domyślnie 10000).
-
-## Uruchomienie
-
-```bash
-npm start          # produkcyjnie
-npm run dev         # z auto-restartem (node --watch)
-```
-
-Domyślnie nasłuchuje na porcie z `PORT` (domyślnie 3000).
-
-## Logowanie Google - model allowlisty
-
-Logowanie **nie tworzy** nowych kont automatycznie. Aby ktoś mógł się
-zalogować, jego e-mail musi wcześniej istnieć w tabeli `users`:
-
-```bash
-node scripts/add_user.js ktos@example.com viewer/admin
-```
-
-Konfiguracja OAuth (Google Cloud Console -> OAuth consent screen + Credentials):
-ustaw `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` w `.env`
-(callback musi wskazywać na `https://twoja-domena/auth/google/callback`).
-Bez tych zmiennych `/auth/google` zwraca 503 zamiast się wywalać.
-
-## Płatności (Stripe)
-
-Eksport pliku jest płatny. Kliknięcie CSV/XLSX/PDF otwiera modal z osadzonym
-Stripe Checkout (BLIK, Przelewy24, karta - zestaw metod ustawia się w
-Dashboardzie Stripe, kod ich nie hardkoduje). Plik można pobrać wyłącznie po
-potwierdzonej płatności.
-
-### Konfiguracja
-
-```bash
-# .env
-STRIPE_SECRET_KEY=rk_test_...        # wystarczy klucz ograniczony (restricted)
-STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-PUBLIC_BASE_URL=https://twoja-domena.pl
-```
-
-Lokalnie webhook przekierowuje CLI Stripe:
+### Local Stripe webhook testing
 
 ```bash
 stripe listen --forward-to localhost:3000/webhooks/stripe
 ```
 
-Na produkcji: Dashboard → Developers → Webhooks → endpoint `/webhooks/stripe`,
-zdarzenia `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
-`checkout.session.async_payment_failed`, `checkout.session.expired`.
+Copy the `whsec_...` value it prints into `STRIPE_WEBHOOK_SECRET`.
 
-Bez kluczy STRIPE_* aplikacja normalnie wstaje - płatności zwracają wtedy 503.
+### Deployment
 
-### Jak to działa (i dlaczego tak)
-
-1. `POST /api/checkout/quote` - wycena. Liczba rekordów liczona z bazy
-   (`countInstitutions`), cena z `lib/pricing.js`. Kwota **nigdy** nie pochodzi
-   z przeglądarki.
-2. `POST /api/checkout` - zakłada zamówienie (`orders`, status `pending`) i sesję
-   Stripe Checkout z ceną inline (`price_data`), bez predefiniowanych produktów.
-   Komplet kryteriów zapisuje się w `orders.filters` (JSON).
-3. `POST /webhooks/stripe` - źródło prawdy o płatności. Zamontowany **przed**
-   `express.json()` z `express.raw()`, bo podpis liczy HMAC z surowego body.
-   Powtórki zdarzeń odsiewa tabela `stripe_events` (idempotencja).
-4. `GET /platnosc?session_id=...` - strona powrotu; odpytuje status, bo BLIK
-   potrafi potwierdzić się z opóźnieniem. Dociąga też stan wprost ze Stripe,
-   gdy webhook nie zdążył (`syncOrderFromStripe`).
-5. `GET /pobierz/:token` - generuje plik **z kryteriów zapisanych w zamówieniu**,
-   nie z parametrów URL. To jest właściwa bramka: bez `status = 'paid'` nie ma
-   pliku, a kupujący nie podmieni zakresu po zapłaceniu za mniejszy wycinek.
-   Link wygasa po 7 dniach i ma limit 10 pobrań.
-
-Cennik (`lib/pricing.js`): progi jak podatkowe - 0,25 zł/rekord do 100, potem
-0,15 / 0,07 / 0,03 zł; minimum 19 zł, sufit 499 zł. Zmiana cennika to zmiana
-stałych w tym jednym pliku.
-
-`GET /api/institutions/export` zostaje jako furtka **wyłącznie dla admina**
-(`users.role = 'admin'`) - dla pozostałych zwraca 403, żeby nie omijała płatności.
-
-## Testy
-
-```bash
-npm test
-```
-
-Normalizacja (REGON + suma kontrolna, telefon, WWW, daty), deduplikacja/priorytet
-źródeł, gating pól (projection), zapytania/filtry, cennik (`pricing.test.js`)
-oraz cykl życia zamówienia i idempotencja webhooka (`orders.test.js`).
-
-## Wdrożenie na VPS (PM2 + nginx)
-
-### PM2
+Process management via PM2:
 
 ```bash
 pm2 start ecosystem.config.js
 pm2 save
 ```
 
-`.env` musi leżeć w katalogu aplikacji (dotenv wczytuje go przy starcie).
+Behind an nginx reverse proxy with TLS; the app sets `trust proxy` and
+`secure` session cookies in `NODE_ENV=production`, which requires nginx to
+forward `X-Forwarded-Proto`.
 
-### nginx (reverse proxy)
-
-```nginx
-server {
-    listen 80;
-    server_name baza-kultury.example.pl;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-Aplikacja ma ustawione `trust proxy` i ciasteczka sesji z `secure: true` w
-`NODE_ENV=production` - wymaga to nagłówka `X-Forwarded-Proto` od nginx
-(jak wyżej) po podpięciu TLS (np. certbot), inaczej sesje nie przetrwają.
-
-## Struktura projektu
+## Project structure
 
 ```
-app.js                  - punkt wejścia Express
-db/schema.sql           - schemat SQLite (institutions, raw_*, users, orders, sessions...)
-etl/                    - normalizacja, deduplikacja, orkiestracja ETL
-sources/                - moduły źródeł (csv_seed=prawdziwy, rik/gus/krs/ceidg=mocki)
-lib/                    - projection (gating pól), query (filtry/sort/paginacja),
-                          exportFormats (CSV/XLSX/PDF), exportRun (wspólny stream),
-                          pricing (cennik), orders (zamówienia), stripe, auth, sesje
-routes/                 - api.js (JSON + eksport admina), auth.js (Google OAuth),
-                          payments.js (checkout/status/pobieranie), webhooks.js (Stripe)
-views/, public/         - EJS + Bootstrap 5 + Bootstrap Icons + Google Fonts
-scripts/add_user.js     - dodawanie e-maili do allowlisty
+app.js                  Express entry point
+db/schema.sql            SQLite schema (institutions, raw_*, users, orders, sessions...)
+etl/                     normalization, dedup, ETL orchestration
+sources/                 per-source ingestion modules (real seed + registry mocks)
+lib/                     field-gating (projection), query/filter/sort, export
+                         formats, pricing, orders, Stripe integration, auth, sessions,
+                         export backups
+routes/                  api.js, auth.js (Google OAuth), payments.js (checkout/
+                         status/download), webhooks.js (Stripe), admin.js
+views/, public/          EJS + Bootstrap 5 + Bootstrap Icons
+scripts/add_user.js      add an email to the login allowlist
 ```
 
-## Znane ograniczenia MVP
+## Known MVP limitations
 
-- Rejestracja użytkowników nie jest zaimplementowana - dostęp do pełnych danych
-  w tabeli reguluje allowlist w `users`; eksport pliku bramkuje płatność Stripe.
-- Zamówienie nie wysyła e-maila z linkiem do pobrania - link żyje na stronie
-  powrotu (`/platnosc`). Po zamknięciu karty klient musi mieć go zapisanego.
-- Pole "typ instytucji" pominięte w MVP (dane PKD są już w bazie i eksporcie,
-  więc dodanie klasyfikatora typu w przyszłości nie wymaga ponownego ETL).
-- RIK nie ma jednego ogólnopolskiego API - `sources/rik.js` jest klientem
-  API `dane.gov.pl` dla rejestru MKiDN (ustaw `RIK_LIVE=true`, by pobierać
-  na żywo zamiast z fixture'a); reszta RIK-ów samorządowych wymagałaby
-  osobnych integracji per BIP.
-- `sources/gus.js`, `krs.js`, `ceidg.js` to mocki na fixture'ach - realne
-  klucze API (GUS wymaga wniosku, KRS ma publiczne REST API) podłącza się
-  przez podmianę `fetch()` w danym module, interfejs (`name`, `fetch`,
-  `toCanonical`) zostaje bez zmian.
+- No self-service registration — access to contact-level fields is controlled
+  entirely by the `users` allowlist; export purchases are gated by Stripe.
+- No confirmation email with a re-issuable download link at present — the
+  download link lives on the Stripe return page (`/platnosc`); the admin
+  backup path (`/admin/orders/:id/plik`) exists specifically as the fallback
+  when a customer needs their file re-delivered.
+- Institution "type" as a first-class filter isn't implemented yet — the
+  underlying PKD classification data is already present in the schema and
+  exports, so adding it later doesn't require re-running the ETL.
