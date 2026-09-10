@@ -610,6 +610,19 @@ async function main() {
   fs.writeFileSync(REPORT_PATH, JSON.stringify(report, null, 2));
   if (report.review.length > 0) fs.writeFileSync(REVIEW_PATH, JSON.stringify(report.review, null, 2));
 
+  // Zmiana danych => liczby i próbki na stronach segmentów są nieaktualne.
+  // Powiadamiamy IndexNow (Bing/Yandex) - best effort, nigdy nie wywala
+  // przebiegu. Tylko produkcja i tylko gdy coś realnie się zmieniło.
+  if (!DRY_RUN && report.changes.length > 0 && process.env.NODE_ENV === 'production') {
+    try {
+      const { submit, contentPaths } = require('../lib/indexnow');
+      const res = await submit(contentPaths());
+      console.log(`IndexNow: ${res.status || res.error || res.skipped} (${res.count || 0} adresów)`);
+    } catch (err) {
+      console.warn('IndexNow pominięty:', err.message);
+    }
+  }
+
   console.log('\n================= STATYSTYKI =================');
   console.log(`WWW - weryfikacja:        sprawdzono ${stats.www_checked}, działa ${stats.www_ok}, naprawiono ${stats.www_fixed}, martwe ${stats.www_dead}`);
   console.log(`WWW - z domeny e-mail:    prób ${stats.www_from_email_tried}, uzupełniono ${stats.www_from_email_filled}`);

@@ -20,6 +20,8 @@ nie pisać do produkcyjnego `data/bdik.sqlite`.
 | `npm run enrich` | Agent uzupełniania danych kontaktowych: `node scripts/enrich_contacts.js`. Zob. sekcję 4. |
 | `npm run vendor` | Kopiuje zasoby front-endu (Bootstrap, ikony, font Inter) z `node_modules` do `public/vendor/`. Uruchom po zmianie wersji tych paczek. Wynik commitowany do repo. |
 | `npm run og-image` | Buduje statyczny obraz Open Graph `public/images/og-cover.png` (1200×630). Napis z domeną bierze z `PUBLIC_BASE_URL` — uruchom z produkcyjnym env przed publikacją, inaczej pokaże „localhost". |
+| `npm run icons` | Buduje favicony rastrowe, `apple-touch-icon`, ikony PWA i `public/images/logo.png` (do `Organization` JSON-LD) z `public/favicon.svg`. Env-niezależne. Wynik commitowany. |
+| `npm run indexnow` | Zgłasza adresy treściowe do IndexNow (Bing/Yandex/Seznam). Dodaj `-- --dry-run`, żeby zobaczyć listę bez wysyłki. Uruchom po deployu zmieniającym strony; `npm run enrich` robi to samo automatycznie przy realnej zmianie danych w produkcji. Zob. `docs/seo-geo.md`. |
 | `npm test` | `node scripts/test-db.js && DB_PATH=data/test.sqlite node --test` — tworzy kopię bazy i uruchamia cały zestaw testów na kopii. Zob. sekcję 5. |
 
 ---
