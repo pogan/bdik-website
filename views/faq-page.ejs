@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <%- include('partials/head') %>
+</head>
+<body>
+  <%- include('partials/nav', { user: typeof user !== 'undefined' ? user : null }) %>
+
+  <main class="container pb-5">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-9">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/baza">Baza</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Najczęstsze pytania</li>
+          </ol>
+        </nav>
+
+        <h1 class="h3 mb-1">Najczęstsze pytania</h1>
+        <p class="text-secondary mb-4">
+          Wszystko, co warto wiedzieć o danych, zakupie eksportu i licencji.
+          Nie znalazłeś odpowiedzi? Napisz na <a href="mailto:<%= seller.email %>"><%= seller.email %></a>.
+        </p>
+
+        <div class="accordion" id="faq-accordion">
+          <% faq.forEach((item, i) => { %>
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button<%= i === 0 ? '' : ' collapsed' %>" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#faq-item-<%= i %>"
+                        aria-expanded="<%= i === 0 ? 'true' : 'false' %>" aria-controls="faq-item-<%= i %>">
+                  <%= item.q %>
+                </button>
+              </h2>
+              <div id="faq-item-<%= i %>" class="accordion-collapse collapse<%= i === 0 ? ' show' : '' %>"
+                   data-bs-parent="#faq-accordion">
+                <div class="accordion-body"><%= item.a %></div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+
+        <p class="mt-4">
+          <a href="/baza" class="btn btn-primary btn-sm">Przeglądaj bazę instytucji kultury</a>
+          <a href="/poradniki" class="btn btn-outline-secondary btn-sm ms-1">Poradniki</a>
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="/js/cookies.js"></script>
+</body>
+</html>

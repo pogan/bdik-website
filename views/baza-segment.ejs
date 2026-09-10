@@ -10,31 +10,26 @@
     <div class="container hero-inner">
       <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="/baza">Baza</a></li>
-          <li class="breadcrumb-item active" aria-current="page"><%= segment.label %></li>
+          <% breadcrumb.forEach((item, i) => { %>
+            <% if (i < breadcrumb.length - 1) { %>
+              <li class="breadcrumb-item"><a href="<%= item.url %>"><%= item.name %></a></li>
+            <% } else { %>
+              <li class="breadcrumb-item active" aria-current="page"><%= item.name %></li>
+            <% } %>
+          <% }) %>
         </ol>
       </nav>
       <div class="row">
         <div class="col-lg-9">
-          <% if (kind === 'voivodeship') { %>
-            <h1>Domy kultury, biblioteki i centra kultury w województwie <%= segment.locative %></h1>
-            <p class="hero-lead">
-              W województwie <%= segment.locative %> działa <strong><%= total %></strong> instytucji kultury.
-              <% if (coverage.total) { %>Spośród nich <strong><%= emailPct %>%</strong> ma podany adres e-mail.<% } %>
-              <% if (localities.length) { %>
-                Znajdziesz je m.in. w: <%= localities.join(', ') %><% if (total > localities.length) { %> i innych miejscowościach<% } %>.
-              <% } %>
-            </p>
-          <% } else { %>
-            <h1><%= segment.label %> w Polsce — baza kontaktów</h1>
-            <p class="hero-lead">
-              W bazie jest <strong><%= total %></strong> <%= segment.plural %> z całej Polski, ze wszystkich 16 województw.
-              <% if (voivodeshipBreakdown && voivodeshipBreakdown.length) { %>
-                Najwięcej w województwie <%= voivodeshipBreakdown[0].label.toLowerCase() %> (<%= voivodeshipBreakdown[0].count %>).
-              <% } %>
-              <% if (coverage.total) { %><strong><%= emailPct %>%</strong> ma podany adres e-mail.<% } %>
-            </p>
-          <% } %>
+          <h1><%= h1 %></h1>
+          <p class="hero-lead">
+            <%- leadHtml %>
+            <% if (coverage.total) { %> Adres e-mail ma podany <strong><%= emailPct %>%</strong> z nich.<% } %>
+            <% if (localities.length) { %>
+              Instytucje znajdziesz m.in. w miejscowościach: <%= localities.join(', ') %><% if (moreLocalities) { %> i innych<% } %>.
+            <% } %>
+          </p>
+          <p class="text-secondary small mb-3">Dane w stanie z dnia <%= dataUpdatedAt %>.</p>
           <div class="hero-cta">
             <a href="#tool" class="btn btn-hero btn-lg"><i class="bi bi-search me-2"></i>Przeglądaj i eksportuj</a>
             <a href="#cennik" class="btn btn-hero-ghost btn-lg">Cennik</a>
@@ -44,35 +39,26 @@
     </div>
   </header>
 
-  <% if (kind === 'voivodeship' && typeBreakdown && typeBreakdown.length) { %>
-  <section class="container py-4">
-    <h2 class="h5 mb-3">Instytucje wg typu w województwie <%= segment.locative %></h2>
-    <div class="row g-2">
-      <% typeBreakdown.forEach((t) => { %>
-        <div class="col-6 col-md-3">
-          <a class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center" href="/baza/typ/<%= t.slug %>">
-            <span><%= t.label %></span><span class="badge bg-secondary-subtle text-secondary-emphasis"><%= t.count %></span>
-          </a>
-        </div>
-      <% }) %>
-    </div>
-  </section>
-  <% } %>
-
-  <% if (kind === 'type' && voivodeshipBreakdown && voivodeshipBreakdown.length) { %>
-  <section class="container py-4">
-    <h2 class="h5 mb-3">Najwięcej w województwach</h2>
-    <div class="row g-2">
-      <% voivodeshipBreakdown.forEach((v) => { %>
-        <div class="col-6 col-md-3">
-          <a class="btn btn-outline-secondary w-100 d-flex justify-content-between align-items-center" href="/baza/wojewodztwo/<%= v.slug %>">
-            <span><%= v.label %></span><span class="badge bg-secondary-subtle text-secondary-emphasis"><%= v.count %></span>
-          </a>
-        </div>
-      <% }) %>
-    </div>
-  </section>
-  <% } %>
+  <% breakdowns.forEach((bd) => { %>
+    <section class="container py-4">
+      <h2 class="h5 mb-3"><%= bd.heading %></h2>
+      <div class="table-shell table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr><th>Kategoria</th><th class="text-end">Liczba instytucji</th></tr>
+          </thead>
+          <tbody>
+            <% bd.rows.forEach((r) => { %>
+              <tr>
+                <td><% if (r.href) { %><a href="<%= r.href %>"><%= r.label %></a><% } else { %><%= r.label %><% } %></td>
+                <td class="text-end"><%= r.count %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  <% }) %>
 
   <% if (sample && sample.length) { %>
   <section class="container py-4">
@@ -108,7 +94,7 @@
   <%- include('partials/tool') %>
 
   <p class="container text-secondary small">
-    Masz pytania dotyczące zakupu i licencji? Zobacz <a href="/baza#faq">najczęstsze pytania</a>.
+    Masz pytania dotyczące zakupu i licencji? Zobacz <a href="/faq">najczęstsze pytania</a>.
   </p>
 
   <%- include('partials/browse-links', {
@@ -116,8 +102,8 @@
     anchorId: null,
     voivodeshipsList,
     institutionTypes,
-    excludeVoivodeshipSlug: kind === 'voivodeship' ? segment.slug : null,
-    excludeTypeSlug: kind === 'type' ? segment.slug : null,
+    excludeVoivodeshipSlug: related.excludeVoivodeshipSlug || null,
+    excludeTypeSlug: related.excludeTypeSlug || null,
   }) %>
 
   <%- include('partials/payment-modal') %>

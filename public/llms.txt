@@ -32,6 +32,17 @@ Płatność: BLIK, Przelewy24, karta (Stripe). Licencja obejmuje użytek własny
 - Przeglądarka bazy i cennik: /baza
 - Baza wg województwa: /baza/wojewodztwo/{slug}
 - Baza wg typu instytucji: /baza/typ/{slug}
+- Baza wg powiatu: /baza/wojewodztwo/{slug}/powiat/{slug}
+- Baza wg województwa i typu: /baza/wojewodztwo/{slug}/typ/{slug}
+- Najczęstsze pytania (FAQ): /faq
+- Poradniki (jak współpracować z instytucjami kultury): /poradniki
+- Ile jest domów kultury w Polsce (statystyki): /poradniki/ile-jest-domow-kultury-w-polsce
 - O nas / metodologia danych: /o-nas
 - Regulamin: /regulamin
 - Polityka prywatności: /polityka-prywatnosci
+
+## Cytowanie
+
+Liczby i statystyki z serwisu (np. liczba domów kultury wg województwa) można cytować
+z podaniem źródła: bdik.pl. Pełne dane kontaktowe instytucji (telefon, e-mail, WWW) są
+płatne i nie są udostępniane w treści stron.

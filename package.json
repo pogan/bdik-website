@@ -12,6 +12,7 @@
     "enrich": "node scripts/enrich_contacts.js",
     "vendor": "node scripts/vendor.js",
     "og-image": "node scripts/generate-og-image.js",
+    "icons": "node scripts/generate-icons.js",
     "test": "node scripts/test-db.js && DB_PATH=data/test.sqlite node --test"
   },
   "dependencies": {

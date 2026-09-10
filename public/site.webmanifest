@@ -1,0 +1,16 @@
+{
+  "name": "Baza Danych Instytucji Kultury",
+  "short_name": "BDIK",
+  "description": "Baza kontaktowa polskich instytucji kultury - domy kultury, biblioteki, centra i ośrodki kultury.",
+  "lang": "pl-PL",
+  "start_url": "/baza",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#ffffff",
+  "theme_color": "#6d5ae6",
+  "icons": [
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}

@@ -8,14 +8,20 @@
     ? description
     : 'Baza ponad 2 200 domów kultury, bibliotek i centrów kultury w Polsce - filtruj po województwie, powiecie, gminie i miejscowości.';
   const metaRobots = typeof robots !== 'undefined' ? robots : 'noindex, nofollow';
+  // Strony indeksowalne dostają też dyrektywy pozwalające na duże miniatury i
+  // pełne fragmenty w wynikach Google, w Google Discover i w odpowiedziach AI.
+  const metaRobotsFull = /noindex/.test(metaRobots)
+    ? metaRobots
+    : `${metaRobots}, max-image-preview:large, max-snippet:-1, max-video-preview:-1`;
   const metaCanonical = typeof canonicalUrl !== 'undefined' ? canonicalUrl : null;
   const metaOgTitle = typeof ogTitle !== 'undefined' ? ogTitle : metaTitle;
 %>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#6d5ae6">
 <title><%= metaTitle %></title>
 <meta name="description" content="<%= metaDescription %>">
-<meta name="robots" content="<%= metaRobots %>">
+<meta name="robots" content="<%= metaRobotsFull %>">
 <% if (metaCanonical) { %>
 <link rel="canonical" href="<%= metaCanonical %>">
 
@@ -29,6 +35,7 @@
 <meta property="og:image" content="<%= ogImageUrl %>">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Baza Danych Instytucji Kultury — kontakty do domów kultury, bibliotek i centrów kultury">
 <% } %>
 
 <meta name="twitter:card" content="<%= typeof ogImageUrl !== 'undefined' && ogImageUrl ? 'summary_large_image' : 'summary' %>">
@@ -40,6 +47,9 @@
 <% } %>
 
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 
 <% if (typeof orgStructuredData !== 'undefined' && orgStructuredData) { %>
 <script type="application/ld+json"><%- JSON.stringify(orgStructuredData).replace(/</g, '\\u003c') %></script>
@@ -47,6 +57,8 @@
 
 <!-- Zasoby serwowane z własnego serwera (public/vendor) - bez CDN, żeby nie
      wyciekać IP użytkowników do Google/jsDelivr. Aktualizacja: scripts/vendor.js. -->
+<link rel="preload" href="/vendor/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/vendor/fonts/inter-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/vendor/fonts/inter.css">
 <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.min.css">
 <link rel="stylesheet" href="/vendor/bootstrap-icons/bootstrap-icons.min.css">

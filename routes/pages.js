@@ -1,9 +1,8 @@
-// Wszystkie renderowane strony treściowe (produkt, prawne, o nas) razem z
-// PUBLIC_PAGES - jedną listą publicznych, indeksowalnych adresów, z której
-// korzysta zarówno ten plik (do budowy każdej trasy), jak i robots.txt/
-// sitemap.xml w app.js. Wydzielone z app.js, żeby ten plik nie rósł w
-// nieskończoność (patrz już wydzielone routes/api.js, routes/admin.js itd.) -
-// to czysto mechaniczna ekstrakcja, zachowanie tras się nie zmienia.
+// Wszystkie renderowane strony treściowe (produkt, prawne, o nas, FAQ, strony
+// segmentów) razem z PUBLIC_PAGES - jedną listą publicznych, indeksowalnych
+// adresów, z której korzysta zarówno ten plik (do budowy każdej trasy), jak i
+// robots.txt/sitemap.xml w app.js. Wydzielone z app.js, żeby ten plik nie rósł
+// w nieskończoność (patrz już wydzielone routes/api.js, routes/admin.js itd.).
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
@@ -22,6 +21,8 @@ const { countInstitutions, countWithContact, queryInstitutions, coverageCounts }
 const { PUBLIC_FIELDS } = require('../lib/projection');
 const institutionTypes = require('../lib/institutionTypes');
 const voivodeships = require('../lib/voivodeships');
+const geoPages = require('../lib/geoPages');
+const guides = require('../lib/guides');
 
 const router = express.Router();
 
@@ -35,8 +36,9 @@ const dataLastmod = () => lastDataUpdateDate().toISOString().slice(0, 10);
 // robots.txt / sitemap.xml (app.js) budowane z tej samej listy publicznych,
 // indeksowalnych tras co render'y poniżej - trzymamy je razem, żeby dodanie
 // nowej strony publicznej nie wymagało pamiętania o osobnym pliku. Strony
-// segmentów (województwo/typ) generowane programistycznie z tych samych
-// statycznych list, którymi renderują się linki krzyżowe (partials/browse-links).
+// segmentów (województwo/typ/powiat/przecięcia) generowane programistycznie
+// z tych samych list, którymi renderują się linki krzyżowe. Powiaty i
+// przecięcia województwo x typ - tylko te z realną treścią (patrz lib/geoPages.js).
 const PUBLIC_PAGES = [
   { path: '/baza', changefreq: 'daily', priority: '1.0', lastmod: dataLastmod() },
   ...voivodeships.all().map((v) => ({
@@ -51,15 +53,35 @@ const PUBLIC_PAGES = [
     priority: '0.6',
     lastmod: dataLastmod(),
   })),
+  ...geoPages.voivodeshipTypes().map((x) => ({
+    path: x.path,
+    changefreq: 'weekly',
+    priority: '0.5',
+    lastmod: dataLastmod(),
+  })),
+  ...geoPages.counties().map((c) => ({
+    path: c.path,
+    changefreq: 'weekly',
+    priority: '0.5',
+    lastmod: dataLastmod(),
+  })),
+  { path: '/faq', changefreq: 'monthly', priority: '0.5', lastmod: dataLastmod() },
+  { path: '/poradniki', changefreq: 'monthly', priority: '0.4', lastmod: guides.all().map((g) => g.updated).sort().pop() },
+  ...guides.all().map((g) => ({
+    path: `/poradniki/${g.slug}`,
+    changefreq: 'monthly',
+    priority: '0.5',
+    lastmod: g.updated,
+  })),
   { path: '/regulamin', changefreq: 'monthly', priority: '0.3', lastmod: TERMS_VERSION },
   { path: '/polityka-prywatnosci', changefreq: 'monthly', priority: '0.3', lastmod: viewMtime('legal/polityka-prywatnosci') },
   { path: '/o-nas', changefreq: 'monthly', priority: '0.4', lastmod: viewMtime('legal/o-nas') },
 ];
 
-// BreadcrumbList wspólne dla stron segmentów (województwo/typ) - jedyne
-// dane strukturalne, jakie te strony dostają (patrz uwaga w planie SEO:
-// powielanie pełnego FAQPage na ~20 niemal identycznych stronach wyglądałoby
-// jak content farm, więc FAQPage zostaje tylko na /baza i /o-nas).
+// BreadcrumbList wspólne dla stron segmentów - jedyne dane strukturalne, jakie
+// te strony dostają (patrz uwaga w planie SEO: powielanie pełnego FAQPage na
+// ~150 niemal identycznych stronach wyglądałoby jak content farm, więc FAQPage
+// zostaje tylko na /faq i /o-nas).
 function breadcrumbSchema(items) {
   return {
     '@context': 'https://schema.org',
@@ -142,8 +164,9 @@ function cennikView() {
   };
 }
 
-// FAQ zdefiniowane raz: te same pytania renderują akordeon na stronie bazy
-// oraz dane strukturalne FAQPage (schema.org) - treść nie może się rozjechać.
+// FAQ zdefiniowane raz: te same pytania renderują akordeon na stronie bazy,
+// dedykowaną stronę /faq oraz dane strukturalne FAQPage (schema.org, tylko
+// na /faq) - treść nie może się rozjechać.
 function faqView(dataUpdatedAt) {
   return [
     {
@@ -214,7 +237,7 @@ function faqView(dataUpdatedAt) {
         `${countInstitutions(db, { filters: { type: 'osrodki-kultury' } })} ośrodków kultury i ` +
         `${countInstitutions(db, { filters: { type: 'biblioteki' } })} bibliotek - w sumie ` +
         `${countInstitutions(db)} instytucji kultury z 16 województw. Dokładny rozkład wg regionu i ` +
-        'typu zobaczysz niżej, w sekcji "Przeglądaj bazę według regionu i typu instytucji".',
+        'typu zobaczysz na stronie /poradniki/ile-jest-domow-kultury-w-polsce.',
     }
   ];
 }
@@ -252,22 +275,38 @@ router.get('/baza', (req, res) => {
         url: canonicalUrl('/baza'),
         license: canonicalUrl('/regulamin'),
         isAccessibleForFree: false,
-        keywords: ['domy kultury', 'biblioteki', 'centra kultury', 'instytucje kultury', 'kontakty'],
+        inLanguage: 'pl-PL',
+        datePublished: '2026-01-01',
+        dateModified: dataLastmod(),
         creator: {
           '@type': 'Organization',
           name: seller.name,
           email: seller.email,
           url: baseUrl(),
         },
-      },
-      {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: faq.map((item) => ({
-          '@type': 'Question',
-          name: item.q,
-          acceptedAnswer: { '@type': 'Answer', text: item.a },
-        })),
+        publisher: { '@type': 'Organization', name: seller.name, url: baseUrl() },
+        keywords: ['domy kultury', 'biblioteki', 'centra kultury', 'instytucje kultury', 'kontakty'],
+        spatialCoverage: { '@type': 'Place', name: 'Polska' },
+        temporalCoverage: `2026-01-01/${dataLastmod()}`,
+        variableMeasured: [
+          'nazwa instytucji', 'województwo', 'powiat', 'gmina', 'miejscowość',
+          'ulica', 'kod pocztowy', 'telefon', 'e-mail', 'strona WWW', 'REGON',
+        ],
+        distribution: [
+          {
+            '@type': 'DataDownload',
+            name: 'Bezpłatna próbka (PDF, 16 rekordów)',
+            encodingFormat: 'application/pdf',
+            contentUrl: `${baseUrl()}/pliki/przykladowa-lista-instytucji-kultury.pdf`,
+          },
+          { '@type': 'DataDownload', name: 'Pełny eksport CSV (płatny)', encodingFormat: 'text/csv' },
+          {
+            '@type': 'DataDownload',
+            name: 'Pełny eksport XLSX (płatny)',
+            encodingFormat: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          },
+          { '@type': 'DataDownload', name: 'Pełny eksport PDF (płatny)', encodingFormat: 'application/pdf' },
+        ],
       },
       {
         '@context': 'https://schema.org',
@@ -291,113 +330,231 @@ router.get('/baza', (req, res) => {
   });
 });
 
-// Strony programistyczne per województwo - server-rendered próbka + wstępnie
-// zawężone narzędzie (#tool), żeby crawlery bez JS (i część fetcherów LLM)
-// widziały realną treść, nie tylko pusty kontener wypełniany przez table.js.
-// H1/opis mają inną strukturę zdań niż strony typu (poniżej) - patrz uwaga
-// w planie SEO o unikaniu sygnału "jeden szablon, N niemal identycznych stron".
+// Wspólny render stron segmentów (województwo / typ / powiat / województwo x typ).
+// Różnią się filtrem, nagłówkiem i rozkładami; reszta (próbka, cennik, narzędzie,
+// linki krzyżowe, dane strukturalne BreadcrumbList) jest taka sama.
+function renderSegment(req, res, opts) {
+  const { filters, title, description, canonicalPath, h1, leadHtml, breadcrumb } = opts;
+  const total = countInstitutions(db, { filters });
+  const coverage = coverageCounts(db, { filters });
+  const sample = sampleInstitutions(filters);
+  const localities = distinctLocalities(sample);
+
+  res.render('baza-segment', {
+    total,
+    coverage,
+    emailPct: emailCoveragePercent(coverage),
+    localities,
+    moreLocalities: total > localities.length,
+    sample,
+    breakdowns: opts.breakdowns || [],
+    h1,
+    leadHtml,
+    breadcrumb,
+    cennik: cennikView(),
+    institutionTypes: institutionTypes.all(),
+    voivodeshipsList: voivodeships.all(),
+    user: req.user || null,
+    stripePublishableKey: publishableKey,
+    stripeConfigured,
+    adminView: isAdmin(req) ? adminViewSpec() : null,
+    dataUpdatedAt: lastDataUpdate(),
+    title,
+    description,
+    robots: 'index, follow',
+    canonicalUrl: canonicalUrl(canonicalPath),
+    initialFilters: opts.initialFilters || {},
+    related: opts.related || {},
+    structuredData: [breadcrumbSchema(breadcrumb)],
+  });
+}
+
+// Rozkład wg typu instytucji dla danego zestawu filtrów; link prowadzi do
+// strony województwo x typ, jeśli taka istnieje, w innym razie do strony typu.
+function typeBreakdownRows(baseFilters, voiSlug) {
+  return institutionTypes
+    .all()
+    .map((t) => {
+      const count = countInstitutions(db, { filters: { ...baseFilters, type: t.slug } });
+      const cross = voiSlug ? geoPages.voivodeshipTypeBySlug(voiSlug, t.slug) : null;
+      return { label: t.label, count, href: cross ? cross.path : `/baza/typ/${t.slug}` };
+    })
+    .filter((r) => r.count > 0);
+}
+
 router.get('/baza/wojewodztwo/:slug', (req, res) => {
   const voi = voivodeships.bySlug(req.params.slug);
   if (!voi) return res.status(404).render('404', { user: req.user || null });
 
   const filters = { voivodeship: voi.value };
   const total = countInstitutions(db, { filters });
-  const coverage = coverageCounts(db, { filters });
-  const sample = sampleInstitutions(filters);
-  const localities = distinctLocalities(sample);
-  // Rozbicie krzyżowe wojewodztwo+typ - buildWhere (lib/query.js) już wspiera
-  // oba filtry naraz, więc to tylko N dodatkowych zapytań COUNT, bez zmian
-  // w warstwie danych. Tylko typy z >0 wynikami trafiają na stronę.
-  const typeBreakdown = institutionTypes
-    .all()
-    .map((t) => ({ ...t, count: countInstitutions(db, { filters: { voivodeship: voi.value, type: t.slug } }) }))
-    .filter((t) => t.count > 0);
 
-  const title = `Domy kultury, biblioteki i centra kultury w województwie ${voi.locative} — baza kontaktów`;
-  const description = `${total} instytucji kultury w województwie ${voi.locative}: domy kultury, biblioteki, ` +
-    'centra i ośrodki kultury. Sprawdź dane kontaktowe i pobierz listę do CSV, XLSX lub PDF.';
+  const breakdowns = [
+    {
+      heading: `Instytucje kultury w województwie ${voi.locative} według typu`,
+      rows: typeBreakdownRows(filters, voi.slug),
+    },
+  ];
+  const countyRows = geoPages
+    .countiesInVoivodeship(voi.slug)
+    .map((c) => ({ label: c.label, count: c.count, href: c.path }));
+  if (countyRows.length) {
+    breakdowns.push({ heading: `Powiaty w województwie ${voi.locative}`, rows: countyRows });
+  }
 
-  res.render('baza-segment', {
-    kind: 'voivodeship',
-    segment: voi,
-    total,
-    coverage,
-    emailPct: emailCoveragePercent(coverage),
-    localities,
-    sample,
-    typeBreakdown,
-    voivodeshipBreakdown: null,
-    cennik: cennikView(),
-    institutionTypes: institutionTypes.all(),
-    voivodeshipsList: voivodeships.all(),
-    user: req.user || null,
-    stripePublishableKey: publishableKey,
-    stripeConfigured,
-    adminView: isAdmin(req) ? adminViewSpec() : null,
-    dataUpdatedAt: lastDataUpdate(),
-    title,
-    description,
-    robots: 'index, follow',
-    canonicalUrl: canonicalUrl(`/baza/wojewodztwo/${voi.slug}`),
-    initialFilters: { voivodeship: voi.value },
-    structuredData: [
-      breadcrumbSchema([
-        { name: 'Baza Danych Instytucji Kultury', url: canonicalUrl('/baza') },
-        { name: voi.label, url: canonicalUrl(`/baza/wojewodztwo/${voi.slug}`) },
-      ]),
+  renderSegment(req, res, {
+    filters,
+    title: `Domy kultury, biblioteki i centra kultury w województwie ${voi.locative} — baza kontaktów`,
+    description:
+      `${total} instytucji kultury w województwie ${voi.locative}: domy kultury, biblioteki, ` +
+      'centra i ośrodki kultury. Sprawdź dane kontaktowe i pobierz listę do CSV, XLSX lub PDF.',
+    canonicalPath: `/baza/wojewodztwo/${voi.slug}`,
+    h1: `Domy kultury, biblioteki i centra kultury w województwie ${voi.locative}`,
+    leadHtml: `W województwie ${voi.locative} baza obejmuje <strong>${total}</strong> instytucji kultury.`,
+    breadcrumb: [
+      { name: 'Baza Danych Instytucji Kultury', url: canonicalUrl('/baza') },
+      { name: voi.label, url: canonicalUrl(`/baza/wojewodztwo/${voi.slug}`) },
     ],
+    breakdowns,
+    initialFilters: { voivodeship: voi.value },
+    related: { excludeVoivodeshipSlug: voi.slug },
   });
 });
 
-// Strony programistyczne per typ instytucji - patrz komentarz przy trasie
-// /baza/wojewodztwo/:slug powyżej (ten sam mechanizm, druga oś podziału).
 router.get('/baza/typ/:slug', (req, res) => {
   const type = institutionTypes.bySlug(req.params.slug);
   if (!type) return res.status(404).render('404', { user: req.user || null });
 
   const filters = { type: type.slug };
   const total = countInstitutions(db, { filters });
-  const coverage = coverageCounts(db, { filters });
-  const sample = sampleInstitutions(filters);
-  const localities = distinctLocalities(sample);
-  const voivodeshipBreakdown = voivodeships
+
+  const rows = voivodeships
     .all()
-    .map((v) => ({ ...v, count: countInstitutions(db, { filters: { voivodeship: v.value, type: type.slug } }) }))
-    .filter((v) => v.count > 0)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 6);
+    .map((v) => {
+      const count = countInstitutions(db, { filters: { voivodeship: v.value, type: type.slug } });
+      const cross = geoPages.voivodeshipTypeBySlug(v.slug, type.slug);
+      return { label: v.label, count, href: cross ? cross.path : `/baza/wojewodztwo/${v.slug}` };
+    })
+    .filter((r) => r.count > 0)
+    .sort((a, b) => b.count - a.count);
 
-  const title = `${type.label} w Polsce — baza kontaktów (${total})`;
-  const description = `${total} ${type.plural} w Polsce z danymi kontaktowymi. Filtruj po województwie, ` +
-    'powiecie i gminie, sprawdź dane kontaktowe i pobierz listę do CSV, XLSX lub PDF.';
-
-  res.render('baza-segment', {
-    kind: 'type',
-    segment: type,
-    total,
-    coverage,
-    emailPct: emailCoveragePercent(coverage),
-    localities,
-    sample,
-    typeBreakdown: null,
-    voivodeshipBreakdown,
-    cennik: cennikView(),
-    institutionTypes: institutionTypes.all(),
-    voivodeshipsList: voivodeships.all(),
-    user: req.user || null,
-    stripePublishableKey: publishableKey,
-    stripeConfigured,
-    adminView: isAdmin(req) ? adminViewSpec() : null,
-    dataUpdatedAt: lastDataUpdate(),
-    title,
-    description,
-    robots: 'index, follow',
-    canonicalUrl: canonicalUrl(`/baza/typ/${type.slug}`),
+  renderSegment(req, res, {
+    filters,
+    title: `${type.label} w Polsce — baza kontaktów (${total})`,
+    description:
+      `${total} ${type.plural} w Polsce z danymi kontaktowymi. Filtruj po województwie, ` +
+      'powiecie i gminie, sprawdź dane kontaktowe i pobierz listę do CSV, XLSX lub PDF.',
+    canonicalPath: `/baza/typ/${type.slug}`,
+    h1: `${type.label} w Polsce — baza kontaktów`,
+    leadHtml:
+      `W bazie jest <strong>${total}</strong> ${type.plural} z całej Polski, ze wszystkich 16 województw.`,
+    breadcrumb: [
+      { name: 'Baza Danych Instytucji Kultury', url: canonicalUrl('/baza') },
+      { name: type.label, url: canonicalUrl(`/baza/typ/${type.slug}`) },
+    ],
+    breakdowns: [{ heading: `${type.label} według województwa`, rows }],
     initialFilters: { type: type.slug },
+    related: { excludeTypeSlug: type.slug },
+  });
+});
+
+// Strony programistyczne per powiat - tylko powiaty z realną liczbą instytucji
+// (lib/geoPages.js). Filtr `county` to dopasowanie dokładne (lib/query.js),
+// więc przekazujemy wartość z bazy, nie slug.
+router.get('/baza/wojewodztwo/:woj/powiat/:powiat', (req, res) => {
+  const county = geoPages.countyBySlug(req.params.woj, req.params.powiat);
+  if (!county) return res.status(404).render('404', { user: req.user || null });
+
+  const voi = county.voivodeship;
+  const filters = { voivodeship: voi.value, county: county.countyValue };
+  const total = countInstitutions(db, { filters });
+  const rows = typeBreakdownRows(filters, voi.slug);
+
+  renderSegment(req, res, {
+    filters,
+    title: `Instytucje kultury — ${county.label}, województwo ${voi.label.toLowerCase()} (${total})`,
+    description:
+      `${total} instytucji kultury w ${county.locative} (województwo ${voi.label.toLowerCase()}): domy kultury, ` +
+      'biblioteki, ośrodki i centra kultury z danymi kontaktowymi.',
+    canonicalPath: county.path,
+    h1: `Instytucje kultury w ${county.locative}`,
+    leadHtml:
+      `W ${county.locative} (województwo ${voi.label.toLowerCase()}) baza obejmuje <strong>${total}</strong> ` +
+      'instytucji kultury.',
+    breadcrumb: [
+      { name: 'Baza Danych Instytucji Kultury', url: canonicalUrl('/baza') },
+      { name: voi.label, url: canonicalUrl(`/baza/wojewodztwo/${voi.slug}`) },
+      { name: county.label, url: canonicalUrl(county.path) },
+    ],
+    breakdowns: rows.length ? [{ heading: `Instytucje w ${county.locative} według typu`, rows }] : [],
+    initialFilters: { voivodeship: voi.value, county: county.countyValue },
+    related: { excludeVoivodeshipSlug: voi.slug },
+  });
+});
+
+// Strony programistyczne per województwo x typ - tylko przecięcia z realną
+// liczbą instytucji (lib/geoPages.js).
+router.get('/baza/wojewodztwo/:woj/typ/:typ', (req, res) => {
+  const entry = geoPages.voivodeshipTypeBySlug(req.params.woj, req.params.typ);
+  if (!entry) return res.status(404).render('404', { user: req.user || null });
+
+  const { voivodeship: voi, type } = entry;
+  const filters = { voivodeship: voi.value, type: type.slug };
+  const total = countInstitutions(db, { filters });
+
+  const rows = geoPages
+    .voivodeshipsForType(type.slug)
+    .filter((x) => x.voivodeship.slug !== voi.slug)
+    .map((x) => ({ label: x.voivodeship.label, count: x.count, href: x.path }))
+    .sort((a, b) => b.count - a.count);
+
+  renderSegment(req, res, {
+    filters,
+    title: `${type.label} — województwo ${voi.label.toLowerCase()} | baza kontaktów (${total})`,
+    description:
+      `${total} ${type.plural} w województwie ${voi.locative} z danymi kontaktowymi. Filtruj po ` +
+      'powiecie i gminie, pobierz listę do CSV, XLSX lub PDF.',
+    canonicalPath: entry.path,
+    h1: `${type.label} w województwie ${voi.locative}`,
+    leadHtml: `W województwie ${voi.locative} baza obejmuje <strong>${total}</strong> ${type.plural}.`,
+    breadcrumb: [
+      { name: 'Baza Danych Instytucji Kultury', url: canonicalUrl('/baza') },
+      { name: voi.label, url: canonicalUrl(`/baza/wojewodztwo/${voi.slug}`) },
+      { name: type.label, url: canonicalUrl(entry.path) },
+    ],
+    breakdowns: rows.length ? [{ heading: `${type.label} w innych województwach`, rows }] : [],
+    initialFilters: { voivodeship: voi.value, type: type.slug },
+    related: { excludeVoivodeshipSlug: voi.slug, excludeTypeSlug: type.slug },
+  });
+});
+
+// Dedykowana, indeksowalna strona FAQ - te same pytania co akordeon na /baza,
+// ale to tutaj (strona, której główną treścią jest FAQ) renderujemy dane
+// strukturalne FAQPage, żeby nie powielać ich na dwóch adresach.
+router.get('/faq', (req, res) => {
+  const faq = faqView(lastDataUpdate());
+  res.render('faq-page', {
+    user: req.user || null,
+    faq,
+    title: 'Najczęstsze pytania — Baza Danych Instytucji Kultury',
+    description:
+      'Skąd pochodzą dane, co zawiera kupiony plik, jak działa płatność i licencja, ile jest ' +
+      'domów kultury w Polsce - odpowiedzi na najczęstsze pytania o Bazę Danych Instytucji Kultury.',
+    robots: 'index, follow',
+    canonicalUrl: canonicalUrl('/faq'),
     structuredData: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faq.map((item) => ({
+          '@type': 'Question',
+          name: item.q,
+          acceptedAnswer: { '@type': 'Answer', text: item.a },
+        })),
+      },
       breadcrumbSchema([
         { name: 'Baza Danych Instytucji Kultury', url: canonicalUrl('/baza') },
-        { name: type.label, url: canonicalUrl(`/baza/typ/${type.slug}`) },
+        { name: 'Najczęstsze pytania', url: canonicalUrl('/faq') },
       ]),
     ],
   });

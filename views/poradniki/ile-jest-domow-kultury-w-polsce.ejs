@@ -1,0 +1,57 @@
+<p class="lead">Poniższe liczby pochodzą z Bazy Danych Instytucji Kultury — zbioru budowanego
+z publicznych rejestrów (Krajowy Rejestr Sądowy, REGON/GUS oraz rejestry instytucji
+kultury) i ręcznej weryfikacji danych kontaktowych. Stan na <strong><%= stats.dataUpdatedAt %></strong>.
+Możesz je cytować z podaniem źródła: bdik.pl.</p>
+
+<p>Łącznie baza obejmuje <strong><%= stats.total %></strong> samorządowych instytucji kultury
+z 16 województw. Nie jest to pełny rejestr państwowy — to zbiór instytucji, dla których
+udało się potwierdzić dane adresowe i kontaktowe — ale dobrze oddaje proporcje między
+typami instytucji i rozkład regionalny.</p>
+
+<h2 class="h5 mt-4">Instytucje według typu</h2>
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead><tr><th>Typ instytucji</th><th class="text-end">Liczba w bazie</th></tr></thead>
+    <tbody>
+      <% stats.byType.forEach((r) => { %>
+        <tr>
+          <td><% if (r.href) { %><a href="<%= r.href %>"><%= r.label %></a><% } else { %><%= r.label %><% } %></td>
+          <td class="text-end"><%= r.count %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<p class="text-secondary small">Kategorie nie są rozłączne — część instytucji ma w nazwie
+więcej niż jedno określenie (np. „ośrodek kultury i biblioteka”), a galerie, fundacje czy
+teatry nie trafiają do żadnej z czterech grup. Formalnie „dom kultury”, „centrum kultury”
+i „ośrodek kultury” to synonimy — samorządowe instytucje kultury gminy lub miasta,
+działające na podstawie tej samej ustawy.</p>
+
+<h2 class="h5 mt-4">Instytucje według województwa</h2>
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead><tr><th>Województwo</th><th class="text-end">Liczba w bazie</th></tr></thead>
+    <tbody>
+      <% stats.byVoivodeship.forEach((r) => { %>
+        <tr>
+          <td><a href="<%= r.href %>"><%= r.label %></a></td>
+          <td class="text-end"><%= r.count %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<h2 class="h5 mt-4">Skąd biorą się różnice między źródłami</h2>
+<p>Publiczne statystyki liczby domów kultury bywają rozbieżne, bo różne źródła liczą co
+innego: GUS w badaniu „Działalność ośrodków kultury, klubów i świetlic” obejmuje też
+świetlice i kluby bez osobowości prawnej; rejestry instytucji kultury prowadzone przez
+organizatorów liczą wyłącznie zarejestrowane instytucje; a bazy kontaktowe takie jak ta
+— tylko instytucje z potwierdzonymi danymi teleadresowymi. Porównując liczby, zawsze
+sprawdź definicję i datę.</p>
+
+<h2 class="h5 mt-4">Pełne dane</h2>
+<p>Rozkład z podziałem na powiaty i gminy, wraz z danymi kontaktowymi, przeglądniesz i
+przefiltrujesz w <a href="/baza">bazie instytucji kultury</a>. Zestawienia per województwo
+i per typ instytucji mają też własne strony — linki w tabelach powyżej.</p>

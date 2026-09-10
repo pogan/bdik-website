@@ -19,6 +19,7 @@ const authRoutes = require('./routes/auth');
 const paymentRoutes = require('./routes/payments');
 const webhookRoutes = require('./routes/webhooks');
 const adminRoutes = require('./routes/admin');
+const guidesRoutes = require('./routes/guides');
 const { router: pagesRoutes, PUBLIC_PAGES } = require('./routes/pages');
 
 const app = express();
@@ -127,6 +128,7 @@ app.get('/robots.txt', (req, res) => {
       'Disallow: /pobierz',
       'Disallow: /api',
       'Disallow: /auth',
+      'Disallow: /logout',
       '',
       `Sitemap: ${baseUrl()}/sitemap.xml`,
       '',
@@ -161,6 +163,7 @@ app.get('/', (req, res) => {
   res.redirect(301, '/baza');
 });
 
+app.use('/', guidesRoutes);
 app.use('/', pagesRoutes);
 
 app.use((req, res) => {
