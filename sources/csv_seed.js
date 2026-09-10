@@ -14,7 +14,14 @@ const {
   normalizedKey,
 } = require('../etl/normalize');
 
-const CSV_PATH = path.join(__dirname, '..', 'kk_claude_data', 'druga_baza_danych.csv');
+// Skonsolidowany zbiór źródłowy: najnowsza aktualizacja rejestru (dawniej
+// trzecia_baza_danych.csv) scalona po REGON-ie z wcześniejszym, bogatszym
+// kolumnowo wydaniem (dawniej druga_baza_danych.csv). Instytucje obecne tylko
+// w starszym wydaniu są zachowane, daty ujednolicone do formatu M/D/YYYY.
+// Wcześniejszy wariant bez identyfikatorów (pierwsza_baza_danych.csv) nie był
+// przydatny do ETL - bez REGON-u seed nie może założyć wiersza (institutions.regon
+// NOT NULL UNIQUE), a jego kolumny były podzbiorem powyższych - więc go usunięto.
+const CSV_PATH = path.join(__dirname, '..', 'kk_claude_data', 'initial_database_100920206.csv');
 
 module.exports = {
   name: 'seed',
