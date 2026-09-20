@@ -299,13 +299,27 @@ router.get('/baza', (req, res) => {
             encodingFormat: 'application/pdf',
             contentUrl: `${baseUrl()}/pliki/przykladowa-lista-instytucji-kultury.pdf`,
           },
-          { '@type': 'DataDownload', name: 'Pełny eksport CSV (płatny)', encodingFormat: 'text/csv' },
+          {
+            '@type': 'DataDownload',
+            name: 'Pełny eksport CSV (płatny)',
+            encodingFormat: 'text/csv',
+            // Płatne eksporty nie mają stałego pliku - generowane są per zamówienie
+            // (routes/payments.js, /pobierz/:id, link 24h/10 pobrań), więc contentUrl
+            // wskazuje na miejsce zakupu, nie na sam plik.
+            contentUrl: canonicalUrl('/baza#cennik'),
+          },
           {
             '@type': 'DataDownload',
             name: 'Pełny eksport XLSX (płatny)',
             encodingFormat: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            contentUrl: canonicalUrl('/baza#cennik'),
           },
-          { '@type': 'DataDownload', name: 'Pełny eksport PDF (płatny)', encodingFormat: 'application/pdf' },
+          {
+            '@type': 'DataDownload',
+            name: 'Pełny eksport PDF (płatny)',
+            encodingFormat: 'application/pdf',
+            contentUrl: canonicalUrl('/baza#cennik'),
+          },
         ],
       },
       {

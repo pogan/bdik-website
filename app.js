@@ -158,9 +158,11 @@ app.use('/', authRoutes);
 app.use('/', paymentRoutes);
 
 app.get('/', (req, res) => {
-  // 301 (nie domyślne 302 Expressa): to strona główna domeny, więc powinna
-  // przekazywać pełną wagę SEO na /baza zamiast rozbijać ją między dwa adresy.
-  res.redirect(301, '/baza');
+  // Produkcja: 301 (nie domyślne 302 Expressa) - to strona główna domeny, więc
+  // powinna przekazywać pełną wagę SEO na /baza zamiast rozbijać ją między dwa adresy.
+  // Dev: 302, bo Chrome trwale cache'uje 301 per-origin (http://localhost:3000)
+  // i przekierowanie "zaraża" każdą inną aplikację uruchomioną na tym porcie.
+  res.redirect(process.env.NODE_ENV === 'production' ? 301 : 302, '/baza');
 });
 
 app.use('/', guidesRoutes);
