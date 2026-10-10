@@ -3,7 +3,9 @@
 //
 // Fazy:
 //   1. Weryfikacja istniejących adresów WWW; naprawa przez obcięcie
-//      podstron/subdomen (www.x.pl/kontakt -> www.x.pl -> x.pl).
+//      podstron/subdomen (www.x.pl/kontakt -> www.x.pl -> x.pl). Subdomenę
+//      obcinamy tylko, gdy oryginalny host nie działa - odmowa dostępu
+//      (403/429 z WAF) oznacza, że serwis istnieje, i adres zostaje.
 //   2. Wyprowadzenie WWW z domeny e-maila (jeśli domena własna, nie gmail/wp).
 //   3. Uzupełnienie telefonu/e-maila ze strony instytucji (+ podstrony
 //      "kontakt"). Wartości schowane za antyspamem: Cloudflare i [at]/[małpa]
@@ -82,6 +84,7 @@ const REPORT_PATH = path.join(__dirname, '..', 'data', 'enrich_report.json');
 const stats = {
   www_checked: 0,
   www_ok: 0,
+  www_blocked: 0,
   www_fixed: 0,
   www_dead: 0,
   www_from_email_tried: 0,
@@ -180,17 +183,25 @@ const tryUrl = (url, retryOnce = false) => tryUrlBase(url, { timeoutMs: TIMEOUT_
 
 // --- Faza 1: weryfikacja WWW -----------------------------------------------------
 
-// Zwraca { status: 'ok'|'fixed'|'dead', pageUrl, html, newValue?, lastStatus }
+// Zwraca { status: 'ok'|'blocked'|'fixed'|'dead', pageUrl, html, newValue?, lastStatus }
 async function resolveWebsite(inst) {
   const variants = websiteVariants(inst.website);
   let lastStatus = null;
   let suggestion = null;
+  let blockedStatus = null;
   for (let i = 0; i < variants.length; i++) {
     const { url, requiresMatch } = variants[i];
+    // Serwisu odmawiającego nam dostępu (403/429 z WAF) nie wolno "naprawiać"
+    // obcięciem subdomeny - istnieje, tylko nie wpuszcza skryptu. Obcinamy
+    // subdomenę wyłącznie, gdy oryginalny host faktycznie nie działa.
+    if (requiresMatch && blockedStatus) {
+      return { status: 'blocked', pageUrl: inst.website, html: '', lastStatus: blockedStatus };
+    }
     // oryginalny adres dostaje jedno ponowienie - przejściowy timeout nie
     // może wysłać działającej strony do "naprawy" na obcej domenie
     const page = await tryUrl(url, i === 0);
     lastStatus = page.status || page.error;
+    if (page.blocked && !blockedStatus) blockedStatus = page.status;
     if (!page.ok || !page.html) continue;
     if (looksLikeParkedPage(page.html)) continue;
     // Obca domena wymaga twardego potwierdzenia treści - zarówno obcięta
@@ -213,6 +224,7 @@ async function resolveWebsite(inst) {
     if (i === 0 && newValue === url) return { status: 'ok', pageUrl: page.finalUrl, html: page.html, lastStatus };
     return { status: 'fixed', pageUrl: page.finalUrl, html: page.html, newValue, lastStatus };
   }
+  if (blockedStatus) return { status: 'blocked', pageUrl: inst.website, html: '', lastStatus: blockedStatus };
   return { status: 'dead', pageUrl: '', html: '', lastStatus, suggestion };
 }
 
@@ -478,7 +490,10 @@ async function main() {
     stats.www_checked += 1;
     const r = await resolveWebsite(inst);
     if (r.status === 'ok') stats.www_ok += 1;
-    else if (r.status === 'fixed') {
+    else if (r.status === 'blocked') {
+      stats.www_blocked += 1;
+      console.log(`  [~] ${inst.name}: ${inst.website} odmawia dostępu (HTTP ${r.lastStatus}) - adres bez zmian`);
+    } else if (r.status === 'fixed') {
       stats.www_fixed += 1;
       applyWebsite(inst, r.newValue, 'obcięcie podstrony/subdomeny');
     } else {
@@ -624,7 +639,7 @@ async function main() {
   }
 
   console.log('\n================= STATYSTYKI =================');
-  console.log(`WWW - weryfikacja:        sprawdzono ${stats.www_checked}, działa ${stats.www_ok}, naprawiono ${stats.www_fixed}, martwe ${stats.www_dead}`);
+  console.log(`WWW - weryfikacja:        sprawdzono ${stats.www_checked}, działa ${stats.www_ok}, odmowa dostępu (bez zmian) ${stats.www_blocked}, naprawiono ${stats.www_fixed}, martwe ${stats.www_dead}`);
   console.log(`WWW - z domeny e-mail:    prób ${stats.www_from_email_tried}, uzupełniono ${stats.www_from_email_filled}`);
   console.log(`WWW - z wyszukiwarki:     prób ${stats.www_from_search_tried}, uzupełniono ${stats.www_from_search_filled}`);
   console.log(`Telefon:                  prób ${stats.phone_tried}, uzupełniono ${stats.phone_filled}`);
