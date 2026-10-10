@@ -1,5 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+
+// ADMIN_EMAILS nie ma domyślnej wartości (adres właściciela usunięty z kodu) -
+// allowlistę ustawiamy tu, przed wczytaniem modułu, który czyta ją przy imporcie.
+process.env.ADMIN_EMAILS = 'admin@example.com';
 const { PUBLIC_FIELDS, ADMIN_FIELDS, isAuthorized, fieldsForRequest } = require('../lib/projection');
 
 test('isAuthorized: false gdy brak req.user', () => {
@@ -36,6 +40,6 @@ test('fieldsForRequest: administrator dostaje wszystkie kolumny tabeli', () => {
   assert.ok(byRole.includes('email'));
   assert.ok(byRole.includes('phone'));
 
-  const byEmail = fieldsForRequest({ user: { is_active: 1, role: 'user', email: 'karol.konop@gmail.com' } });
+  const byEmail = fieldsForRequest({ user: { is_active: 1, role: 'user', email: 'Admin@Example.com' } });
   assert.deepEqual(byEmail, ADMIN_FIELDS);
 });

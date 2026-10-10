@@ -22,6 +22,9 @@
           <li><a href="/polityka-prywatnosci#dane-w-bazie">Dane instytucji w bazie</a></li>
         </ul>
         <div>© <%= new Date().getFullYear() %> <%= seller.name %></div>
+        <% if (typeof appVersion !== 'undefined' && appVersion) { %>
+          <div class="text-secondary" style="font-size:.75rem" title="Wersja aplikacji"><%= appVersion.label %></div>
+        <% } %>
         <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
           <div class="mt-2">
             <a href="/admin/stats"><i class="bi bi-graph-up me-1"></i>Statystyki lejka (tylko administrator)</a>

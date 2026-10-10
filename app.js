@@ -11,6 +11,7 @@ const { passport } = require('./lib/auth');
 const { isAdmin } = require('./lib/projection');
 const { seller } = require('./lib/sellerInfo');
 const { TERMS_VERSION } = require('./lib/legal');
+const { APP_VERSION } = require('./lib/version');
 const { baseUrl, canonicalUrl } = require('./lib/seo');
 const { organizationSchema, websiteSchema } = require('./lib/structuredData');
 const { recordVisit } = require('./lib/visits');
@@ -82,6 +83,7 @@ app.use((req, res, next) => {
   res.locals.isAdmin = isAdmin(req);
   res.locals.seller = seller;
   res.locals.termsVersion = TERMS_VERSION;
+  res.locals.appVersion = APP_VERSION;
   res.locals.orgStructuredData = ORG_STRUCTURED_DATA;
   res.locals.ogImageUrl = OG_IMAGE_URL;
   next();
@@ -113,7 +115,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
+app.get('/healthz', (req, res) => res.json({ status: 'ok', version: APP_VERSION.version, commit: APP_VERSION.commit }));
 
 // robots.txt / sitemap.xml zbudowane z PUBLIC_PAGES (routes/pages.js) - tej
 // samej listy publicznych, indeksowalnych tras co render'y w tamtym pliku,

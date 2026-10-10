@@ -297,6 +297,12 @@
   function updateExportPrice(total, exportPrice) {
     const box = document.getElementById('export-price');
     if (!box) return;
+    if (ADMIN_VIEW && total) {
+      document.getElementById('export-price-text').textContent =
+        `Eksport tych ${total} instytucji: bezpłatnie (administrator)`;
+      box.classList.remove('d-none');
+      return;
+    }
     if (!total || !exportPrice) {
       box.classList.add('d-none');
       return;
@@ -309,9 +315,23 @@
     box.classList.remove('d-none');
   }
 
+  // Administrator pobiera bez płatności - wprost z /api/institutions/export
+  // (serwer i tak weryfikuje uprawnienia, zwykły użytkownik dostanie tam 403).
+  function adminExportUrl(format) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(exportSelection(format))) {
+      if (value) params.set(key, value);
+    }
+    return `/api/institutions/export?${params}`;
+  }
+
   function attachExportHandlers() {
     document.querySelectorAll('#export-buttons button[data-format]').forEach((btn) => {
       btn.addEventListener('click', () => {
+        if (ADMIN_VIEW) {
+          window.location.href = adminExportUrl(btn.dataset.format);
+          return;
+        }
         track('export_modal');
         window.openCheckout(exportSelection(btn.dataset.format));
       });
