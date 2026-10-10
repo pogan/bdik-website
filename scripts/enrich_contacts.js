@@ -5,7 +5,7 @@
 //   1. Weryfikacja istniejących adresów WWW; naprawa przez obcięcie
 //      podstron/subdomen (www.x.pl/kontakt -> www.x.pl -> x.pl). Subdomenę
 //      obcinamy tylko, gdy oryginalny host nie działa - odmowa dostępu
-//      (403/429 z WAF) oznacza, że serwis istnieje, i adres zostaje.
+//      (403/429 z WAF) albo 5xx oznacza, że serwis istnieje, i adres zostaje.
 //   2. Wyprowadzenie WWW z domeny e-maila (jeśli domena własna, nie gmail/wp).
 //   3. Uzupełnienie telefonu/e-maila ze strony instytucji (+ podstrony
 //      "kontakt"). Wartości schowane za antyspamem: Cloudflare i [at]/[małpa]
@@ -191,8 +191,8 @@ async function resolveWebsite(inst) {
   let blockedStatus = null;
   for (let i = 0; i < variants.length; i++) {
     const { url, requiresMatch } = variants[i];
-    // Serwisu odmawiającego nam dostępu (403/429 z WAF) nie wolno "naprawiać"
-    // obcięciem subdomeny - istnieje, tylko nie wpuszcza skryptu. Obcinamy
+    // Serwisu odmawiającego nam dostępu (403/429 z WAF) albo zwracającego 5xx
+    // nie wolno "naprawiać" obcięciem subdomeny - istnieje. Obcinamy
     // subdomenę wyłącznie, gdy oryginalny host faktycznie nie działa.
     if (requiresMatch && blockedStatus) {
       return { status: 'blocked', pageUrl: inst.website, html: '', lastStatus: blockedStatus };
@@ -492,7 +492,7 @@ async function main() {
     if (r.status === 'ok') stats.www_ok += 1;
     else if (r.status === 'blocked') {
       stats.www_blocked += 1;
-      console.log(`  [~] ${inst.name}: ${inst.website} odmawia dostępu (HTTP ${r.lastStatus}) - adres bez zmian`);
+      console.log(`  [~] ${inst.name}: ${inst.website} odmowa/błąd serwera (HTTP ${r.lastStatus}) - adres bez zmian`);
     } else if (r.status === 'fixed') {
       stats.www_fixed += 1;
       applyWebsite(inst, r.newValue, 'obcięcie podstrony/subdomeny');
@@ -639,7 +639,7 @@ async function main() {
   }
 
   console.log('\n================= STATYSTYKI =================');
-  console.log(`WWW - weryfikacja:        sprawdzono ${stats.www_checked}, działa ${stats.www_ok}, odmowa dostępu (bez zmian) ${stats.www_blocked}, naprawiono ${stats.www_fixed}, martwe ${stats.www_dead}`);
+  console.log(`WWW - weryfikacja:        sprawdzono ${stats.www_checked}, działa ${stats.www_ok}, odmowa/5xx (bez zmian) ${stats.www_blocked}, naprawiono ${stats.www_fixed}, martwe ${stats.www_dead}`);
   console.log(`WWW - z domeny e-mail:    prób ${stats.www_from_email_tried}, uzupełniono ${stats.www_from_email_filled}`);
   console.log(`WWW - z wyszukiwarki:     prób ${stats.www_from_search_tried}, uzupełniono ${stats.www_from_search_filled}`);
   console.log(`Telefon:                  prób ${stats.phone_tried}, uzupełniono ${stats.phone_filled}`);
