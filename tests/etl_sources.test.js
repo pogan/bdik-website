@@ -8,6 +8,7 @@ const gus = require('../sources/gus');
 const krs = require('../sources/krs');
 const ceidg = require('../sources/ceidg');
 const { readFixture } = require('../sources/fixtures');
+const { mergeRecord } = require('../etl/dedup');
 
 const ALL = [csvSeed, ceidg, krs, rik, gus];
 
@@ -71,6 +72,28 @@ test('readFixture odmawia wczytania danych testowych na produkcji', async () => 
   await withEnv({ NODE_ENV: 'test' }, () => {
     assert.ok(readFixture('gus.json').length > 0);
   });
+});
+
+test('RIK: nazwa i adres wielkimi literami jak w seedzie, bez REGON-u nie zamazuje regon_valid', () => {
+  const canonical = rik.toCanonical({
+    'Numer wpisu do rejestru': 'RIK 71/2006',
+    'Pełna nazwa instytucji kultury': 'Narodowe Centrum Kultury',
+    'Siedziba i adres instytucji kultury': 'ul. Płocka 13 01-231 Warszawa ',
+  });
+  assert.equal(canonical.name, 'NARODOWE CENTRUM KULTURY');
+  assert.equal(canonical.name_normalized, 'narodowe centrum kultury');
+  assert.equal(canonical.locality, 'WARSZAWA');
+  assert.equal(canonical.post_office, 'WARSZAWA');
+  assert.equal(canonical.street, 'UL. PŁOCKA');
+  assert.equal(canonical.building_no, '13');
+  assert.equal(canonical.postal_code, '01-231');
+
+  // Tak RIK trafia do bazy: dopasowany po nazwie i adresie do rekordu z seedu.
+  const existing = { regon: '140468418', regon_valid: 1, locality: 'WARSZAWA', __source: 'seed' };
+  const merged = mergeRecord(existing, canonical, 'rik');
+  assert.equal(merged.regon_valid, 1);
+  assert.equal(merged.locality, 'WARSZAWA');
+  assert.equal(merged.__source, 'rik');
 });
 
 test('fetch źródła-mocka rzuca na produkcji, nawet z pominięciem filtru w ETL', async () => {

@@ -96,6 +96,14 @@ function isLive(opts = {}) {
   return opts.live ?? process.env.RIK_LIVE === 'true';
 }
 
+// Reszta bazy (rejestr REGON/GUS w seedzie) zapisuje nazwy i adresy WIELKIMI
+// LITERAMI, RIK - zwykłą pisownią. RIK ma przy scalaniu wyższy priorytet, więc
+// bez ujednolicenia nadpisywał np. "WARSZAWA" na "Warszawa" - ta sama
+// miejscowość rozpadała się wtedy w filtrach i wycenie na dwie osobne.
+function registerCase(raw) {
+  return normalizeName(raw).toUpperCase();
+}
+
 module.exports = {
   name: 'rik',
 
@@ -122,22 +130,24 @@ module.exports = {
     const seat = parseSeat(raw['Siedziba i adres instytucji kultury']);
     return {
       regon,
-      regon_valid: isValidRegon(regon) ? 1 : 0,
+      // Bez REGON-u nie ma czego oceniać: pusta wartość (pomijana przez
+      // mergeRecord) nie zamaże przy scalaniu poprawnej flagi z seedu.
+      regon_valid: regon ? (isValidRegon(regon) ? 1 : 0) : '',
       nip: (raw['NIP'] || '').trim(),
       source_ref: (raw['Numer wpisu do rejestru'] || '').trim(),
       krs: '',
-      name: normalizeName(name),
+      name: registerCase(name),
       name_normalized: normalizedKey(name),
       legal_form: 'PAŃSTWOWA INSTYTUCJA KULTURY',
       voivodeship: '',
       county: '',
       commune: '',
-      locality: normalizeName(seat.locality),
-      street: normalizeName(seat.street),
+      locality: registerCase(seat.locality),
+      street: registerCase(seat.street),
       building_no: seat.building_no,
       unit_no: '',
       postal_code: seat.postal_code,
-      post_office: normalizeName(seat.locality),
+      post_office: registerCase(seat.locality),
       phone: normalizePhone(raw['Telefon']),
       fax: '',
       email: normalizeEmail(raw['E-mail'] || raw['Email']),
