@@ -232,7 +232,7 @@
       // (routes/payments.js), więc mówimy to od razu, zanim ktoś zaznaczy zgody.
       if (quote.pricing && quote.pricing.billedCount === 0) {
         showError(
-          'Żaden rekord w tym zakresie nie ma telefonu, e-maila ani strony WWW. ' +
+          'Żaden rekord w tym zakresie nie ma telefonu ani e-maila. ' +
           'Poszerz wybór albo użyj filtra "Dane kontaktowe", żeby wybrać rekordy z kontaktem.'
         );
       }

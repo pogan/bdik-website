@@ -139,7 +139,7 @@ function cennikView() {
     const bd = priceBreakdown(rows);
     return { label, note, rows, gross: bd.gross, grossLabel: formatAmount(bd.gross) };
   };
-  // Płatne są tylko rekordy z danymi kontaktowymi (patrz routes/payments.js),
+  // Płatne są tylko rekordy z telefonem lub e-mailem (patrz routes/payments.js),
   // więc przykład "cała baza" wycenia rekordy z kontaktem, nie wszystkie wiersze.
   const totalRows = countInstitutions(db);
   const billableRows = countWithContact(db);
@@ -187,8 +187,8 @@ function faqView(dataUpdatedAt) {
     {
       q: 'Czy płacę za rekordy, które nie mają danych kontaktowych?',
       a:
-        'Nie. Cena liczona jest wyłącznie za rekordy z co najmniej jednym kanałem kontaktu (telefon, ' +
-        'e-mail lub WWW). Rekordy bez kontaktu trafiają do pliku gratis - dokładny podział widzisz ' +
+        'Nie. Cena liczona jest wyłącznie za rekordy z telefonem lub adresem e-mail. Pozostałe ' +
+        'rekordy (także te z samą stroną WWW) trafiają do pliku gratis - dokładny podział widzisz ' +
         'przed płatnością.',
     },
     {

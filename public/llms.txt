@@ -23,7 +23,7 @@ w Polsce w celu zaproponowania współpracy.
 ## Licencjonowanie / cennik
 
 Model: jednorazowy zakup eksportu (bez abonamentu, bez rejestracji), płatny wyłącznie
-za rekordy z co najmniej jednym kanałem kontaktu. Cena zależy od liczby rekordów w
+za rekordy z telefonem lub e-mailem. Cena zależy od liczby rekordów w
 wybranym zakresie (progi kaskadowe, im więcej rekordów, tym niższa cena za rekord).
 Płatność: BLIK, Przelewy24, karta (Stripe). Licencja obejmuje użytek własny.
 

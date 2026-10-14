@@ -151,7 +151,7 @@ router.post('/api/checkout/quote', express.json(), (req, res) => {
 
   const selection = orders.normalizeSelection(req.body);
   const rowCount = countInstitutions(db, { filters: selection.filters, search: selection.q });
-  // Płatne są wyłącznie rekordy z jakimkolwiek kanałem kontaktu; reszta pliku
+  // Płatne są wyłącznie rekordy z telefonem lub e-mailem; reszta pliku
   // jest gratis - stąd wycena z countWithContact, nie z pełnej liczby wierszy.
   const billedCount = countWithContact(db, { filters: selection.filters, search: selection.q });
   const bd = priceBreakdown(billedCount);
@@ -194,14 +194,14 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireConsents, r
     if (rowCount === 0) {
       return res.status(400).json({ error: 'Wybrane filtry nie zwracają żadnych instytucji - nie ma czego eksportować.' });
     }
-    // Wycena od rekordów z danymi kontaktowymi (reszta pliku gratis). Zakres
+    // Wycena od rekordów z telefonem lub e-mailem (reszta pliku gratis). Zakres
     // całkiem bez kontaktów blokujemy - sprzedawanie samych pustych wierszy
     // byłoby nieuczciwe, a filtr "tylko z kontaktem" pozwala to obejść świadomie.
     const billedCount = countWithContact(db, { filters: selection.filters, search: selection.q });
     if (billedCount === 0) {
       return res.status(400).json({
         error:
-          'Żaden rekord w wybranym zakresie nie ma telefonu, e-maila ani strony WWW. ' +
+          'Żaden rekord w wybranym zakresie nie ma telefonu ani e-maila. ' +
           'Poszerz wybór albo użyj filtra "Dane kontaktowe", żeby zobaczyć rekordy z kontaktem.',
       });
     }
