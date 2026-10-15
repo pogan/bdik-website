@@ -86,6 +86,9 @@ app.use((req, res, next) => {
   res.locals.appVersion = APP_VERSION;
   res.locals.orgStructuredData = ORG_STRUCTURED_DATA;
   res.locals.ogImageUrl = OG_IMAGE_URL;
+  // GA4 ładuje się dopiero po zgodzie (public/js/cookies.js). Admina pomijamy,
+  // tak jak w liczniku odwiedzin - inaczej raporty mierzyłyby pracę nad serwisem.
+  res.locals.ga4Id = res.locals.isAdmin ? null : process.env.GA4_MEASUREMENT_ID || null;
   next();
 });
 

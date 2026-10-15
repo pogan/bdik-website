@@ -1,14 +1,27 @@
-<!-- Pasek informacyjny o cookies. Ciasteczko sesyjne jest niezbędne do działania
-     serwisu (wyjątek od zgody), więc nie prosimy o zgodę na cookies - tylko
-     informujemy. Stan "przeczytane" trzymamy w localStorage (public/js/cookies.js),
-     bez żadnego zewnętrznego skryptu. -->
-<div id="cookie-banner" class="position-fixed bottom-0 start-0 end-0 bg-dark text-light p-3 d-none" style="z-index:1080">
+<!-- Pasek cookies. Ciasteczko sesyjne jest niezbędne (wyjątek od zgody). Gdy
+     ustawiono GA4_MEASUREMENT_ID, pasek pyta o zgodę na Google Analytics, a
+     public/js/cookies.js ładuje gtag.js dopiero po kliknięciu "Akceptuję".
+     Bez GA4 zostaje sam pasek informacyjny. Wybór trzymamy w localStorage. -->
+<div id="cookie-banner" class="position-fixed bottom-0 start-0 end-0 bg-dark text-light p-3 d-none" style="z-index:1080"
+  <% if (typeof ga4Id !== 'undefined' && ga4Id) { %>data-ga-id="<%= ga4Id %>"<% } %>>
   <div class="container d-flex flex-column flex-sm-row align-items-sm-center gap-2">
-    <p class="small mb-0 flex-grow-1">
-      Używamy niezbędnego pliku cookie sesji, aby serwis działał poprawnie. Przy
-      płatności operator Stripe może zapisać własne pliki cookies. Szczegóły w
-      <a href="/polityka-prywatnosci#cookies" class="link-light">polityce prywatności</a>.
-    </p>
-    <button type="button" class="btn btn-light btn-sm text-nowrap" id="cookie-accept">Rozumiem</button>
+    <% if (typeof ga4Id !== 'undefined' && ga4Id) { %>
+      <p class="small mb-0 flex-grow-1">
+        Używamy niezbędnego pliku cookie sesji, aby serwis działał poprawnie. Za Twoją
+        zgodą użyjemy też Google Analytics, żeby sprawdzić, jak korzystasz z serwisu.
+        Szczegóły w <a href="/polityka-prywatnosci#cookies" class="link-light">polityce prywatności</a>.
+      </p>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-light btn-sm text-nowrap" id="cookie-reject">Odrzucam</button>
+        <button type="button" class="btn btn-light btn-sm text-nowrap" id="cookie-accept">Akceptuję</button>
+      </div>
+    <% } else { %>
+      <p class="small mb-0 flex-grow-1">
+        Używamy niezbędnego pliku cookie sesji, aby serwis działał poprawnie. Przy
+        płatności operator Stripe może zapisać własne pliki cookies. Szczegóły w
+        <a href="/polityka-prywatnosci#cookies" class="link-light">polityce prywatności</a>.
+      </p>
+      <button type="button" class="btn btn-light btn-sm text-nowrap" id="cookie-accept">Rozumiem</button>
+    <% } %>
   </div>
 </div>
