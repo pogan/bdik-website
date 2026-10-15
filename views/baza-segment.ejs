@@ -24,15 +24,21 @@
           <h1><%= h1 %></h1>
           <p class="hero-lead">
             <%- leadHtml %>
-            <% if (coverage.total) { %> Adres e-mail ma podany <strong><%= emailPct %>%</strong> z nich.<% } %>
-            <% if (localities.length) { %>
-              Instytucje znajdziesz m.in. w miejscowościach: <%= localities.join(', ') %><% if (moreLocalities) { %> i innych<% } %>.
+            <% if (topLocalities.length) { %>
+              Najwięcej instytucji jest w miejscowościach:
+              <%= topLocalities.map((l) => `${l.label} (${l.count})`).join(', ') %>.
             <% } %>
           </p>
+          <% if (coverage.total) { %>
+            <p class="mb-2">
+              Telefon ma <strong><%= coveragePct.phone %>%</strong> z nich, e-mail <strong><%= coveragePct.email %>%</strong>, a stronę WWW <strong><%= coveragePct.website %>%</strong>
+              (w całej bazie: <%= coveragePctAll.phone %>% / <%= coveragePctAll.email %>% / <%= coveragePctAll.website %>%).
+            </p>
+          <% } %>
           <p class="text-secondary small mb-3">Dane w stanie z dnia <%= dataUpdatedAt %>.</p>
           <div class="hero-cta">
             <a href="#tool" class="btn btn-hero btn-lg"><i class="bi bi-search me-2"></i>Przeglądaj i eksportuj</a>
-            <a href="#cennik" class="btn btn-hero-ghost btn-lg">Cennik</a>
+            <a href="/baza#cennik" class="btn btn-hero-ghost btn-lg">Cennik</a>
           </div>
         </div>
       </div>
@@ -89,9 +95,52 @@
   </section>
   <% } %>
 
-  <%- include('partials/pricing') %>
-
   <%- include('partials/tool') %>
+
+  <% if (listGroups.length) { %>
+  <section class="container py-4 segment-list">
+    <h2 class="h5 mb-1"><%= listHeading %></h2>
+    <p class="text-secondary small mb-3">
+      Nazwy i adresy są bezpłatne. Ikony pokazują, które dane kontaktowe są w bazie:
+      <i class="bi bi-telephone" aria-hidden="true"></i> telefon,
+      <i class="bi bi-envelope" aria-hidden="true"></i> e-mail,
+      <i class="bi bi-globe" aria-hidden="true"></i> strona WWW.
+    </p>
+    <div class="segment-list-groups">
+      <% listGroups.forEach((g) => { %>
+        <div class="segment-list-group">
+          <h3 class="h6 mb-1"><% if (g.href) { %><a href="<%= g.href %>"><%= g.label %></a><% } else { %><%= g.label %><% } %>
+            <span class="text-secondary fw-normal small">(<%= g.items.length %>)</span></h3>
+          <ul class="list-unstyled mb-3">
+            <% g.items.forEach((it) => { %>
+              <li class="mb-1">
+                <span class="fw-semibold"><%= it.name %></span>
+                <span class="segment-contact text-secondary">
+                  <% if (it.hasPhone) { %><i class="bi bi-telephone" role="img" aria-label="telefon w bazie" title="telefon w bazie"></i><% } %>
+                  <% if (it.hasEmail) { %><i class="bi bi-envelope" role="img" aria-label="e-mail w bazie" title="e-mail w bazie"></i><% } %>
+                  <% if (it.hasWebsite) { %><i class="bi bi-globe" role="img" aria-label="strona WWW w bazie" title="strona WWW w bazie"></i><% } %>
+                </span>
+                <br><span class="small text-secondary"><%= it.address %></span>
+              </li>
+            <% }) %>
+          </ul>
+        </div>
+      <% }) %>
+    </div>
+  </section>
+  <% } %>
+
+  <section class="container py-3">
+    <div class="segment-cta p-3 rounded border">
+      <p class="mb-2">
+        <strong>Pełne dane kontaktowe</strong> (telefon, e-mail, WWW) pobierzesz w eksporcie CSV, XLSX lub PDF.
+        Płacisz jednorazowo i tylko za rekordy z telefonem lub e-mailem — od <%= cennik.tiers[cennik.tiers.length - 1].perRowLabel %>
+        do <%= cennik.tiers[0].perRowLabel %> netto za rekord, bez abonamentu i rejestracji.
+      </p>
+      <a href="#tool" class="btn btn-primary btn-sm me-2">Ustaw filtry i sprawdź cenę</a>
+      <a href="/baza#cennik" class="btn btn-outline-secondary btn-sm">Pełny cennik</a>
+    </div>
+  </section>
 
   <p class="container text-secondary small">
     Masz pytania dotyczące zakupu i licencji? Zobacz <a href="/faq">najczęstsze pytania</a>.

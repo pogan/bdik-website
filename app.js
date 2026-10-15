@@ -144,8 +144,6 @@ app.get('/sitemap.xml', (req, res) => {
       `  <url>\n` +
       `    <loc>${canonicalUrl(page.path)}</loc>\n` +
       `    <lastmod>${page.lastmod}</lastmod>\n` +
-      `    <changefreq>${page.changefreq}</changefreq>\n` +
-      `    <priority>${page.priority}</priority>\n` +
       `  </url>`
   ).join('\n');
   res.type('application/xml').send(

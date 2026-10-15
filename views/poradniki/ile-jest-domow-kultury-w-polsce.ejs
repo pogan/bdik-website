@@ -31,12 +31,13 @@ działające na podstawie tej samej ustawy.</p>
 <h2 class="h5 mt-4">Instytucje według województwa</h2>
 <div class="table-responsive">
   <table class="table table-sm">
-    <thead><tr><th>Województwo</th><th class="text-end">Liczba w bazie</th></tr></thead>
+    <thead><tr><th>Województwo</th><th class="text-end">Liczba w bazie</th><th class="text-end">w tym domy kultury</th></tr></thead>
     <tbody>
       <% stats.byVoivodeship.forEach((r) => { %>
         <tr>
           <td><a href="<%= r.href %>"><%= r.label %></a></td>
           <td class="text-end"><%= r.count %></td>
+          <td class="text-end"><% if (r.domyKultury.href) { %><a href="<%= r.domyKultury.href %>"><%= r.domyKultury.count %></a><% } else { %><%= r.domyKultury.count %><% } %></td>
         </tr>
       <% }) %>
     </tbody>
@@ -52,6 +53,8 @@ organizatorów liczą wyłącznie zarejestrowane instytucje; a bazy kontaktowe t
 sprawdź definicję i datę.</p>
 
 <h2 class="h5 mt-4">Pełne dane</h2>
-<p>Rozkład z podziałem na powiaty i gminy, wraz z danymi kontaktowymi, przeglądniesz i
-przefiltrujesz w <a href="/baza">bazie instytucji kultury</a>. Zestawienia per województwo
-i per typ instytucji mają też własne strony — linki w tabelach powyżej.</p>
+<p>Pełne listy instytucji z adresami, z podziałem na miejscowości, mają strony województw
+i typów instytucji — linki w tabelach powyżej.<% if (cityPages.length) { %> Osobne zestawienia
+mają też miasta z największą liczbą instytucji:
+<%- cityPages.map((c) => `<a href="${c.path}">${c.label}</a>`).join(', ') %>.<% } %>
+Dane kontaktowe przeglądniesz i przefiltrujesz w <a href="/baza">bazie instytucji kultury</a>.</p>

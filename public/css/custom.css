@@ -418,3 +418,11 @@ footer .fw-semibold.text-body { color: var(--ink) !important; }
 .text-secondary { color: var(--muted) !important; }
 code { color: var(--accent-ink); background: var(--accent-soft); padding: .1em .4em; border-radius: 6px; font-size: .85em; }
 hr { border-color: var(--line); opacity: 1; }
+
+/* Strony segmentów: pełna lista instytucji -------------------------------- */
+.segment-list-groups { columns: 1; column-gap: 2rem; }
+@media (min-width: 768px) { .segment-list-groups { columns: 2; } }
+@media (min-width: 1200px) { .segment-list-groups { columns: 3; } }
+.segment-list-group { break-inside: avoid; }
+.segment-contact i { margin-left: .3rem; font-size: .85em; }
+.segment-cta { background: var(--surface); border-color: var(--line) !important; }
