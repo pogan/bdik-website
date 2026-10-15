@@ -20,7 +20,9 @@ imprez / animacji kultury. Zadzwoń przed wysłaniem maila i zapytaj wprost: „
 odpowiada za program koncertowy?”. Dzięki temu Twój mail trafi imiennie, a nie na ogólną
 skrzynkę, gdzie ginie.</p>
 <p>Kontakty telefoniczne i adresy e-mail do instytucji w całej Polsce, z podziałem na
-województwo, powiat i gminę, znajdziesz w <a href="/baza">bazie instytucji kultury</a>.</p>
+województwo, powiat i gminę, znajdziesz w <a href="/baza">bazie instytucji kultury</a>.<% if (cityPages.length) { %>
+Planujesz trasę po dużych miastach? Zobacz listy domów kultury:
+<%- cityPages.map((c) => `<a href="${c.path}">${c.label}</a>`).join(', ') %>.<% } %></p>
 
 <h2 class="h5 mt-4">3. Napisz krótki, konkretny pierwszy mail</h2>
 <p>Instytucja dostaje dziesiątki takich wiadomości. Zmieść najważniejsze w pięciu zdaniach:</p>

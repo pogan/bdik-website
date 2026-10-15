@@ -19,6 +19,9 @@
           <li><a href="/regulamin">Regulamin</a></li>
           <li><a href="/polityka-prywatnosci">Polityka prywatności</a></li>
           <li><a href="/polityka-prywatnosci#cookies">Pliki cookies</a></li>
+          <% if (typeof ga4Id !== 'undefined' && ga4Id) { %>
+            <li><a href="#" data-cookie-settings>Ustawienia cookies</a></li>
+          <% } %>
           <li><a href="/polityka-prywatnosci#dane-w-bazie">Dane instytucji w bazie</a></li>
         </ul>
         <div>© <%= new Date().getFullYear() %> <%= seller.name %></div>

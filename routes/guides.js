@@ -8,6 +8,7 @@ const db = require('../db');
 const guides = require('../lib/guides');
 const voivodeships = require('../lib/voivodeships');
 const institutionTypes = require('../lib/institutionTypes');
+const geoPages = require('../lib/geoPages');
 const { seller } = require('../lib/sellerInfo');
 const { baseUrl, canonicalUrl } = require('../lib/seo');
 const { lastDataUpdate } = require('../lib/dataFreshness');
@@ -68,6 +69,15 @@ function institutionStats() {
         label: v.label,
         count: countInstitutions(db, { filters: { voivodeship: v.value } }),
         href: canonicalUrl(`/baza/wojewodztwo/${v.slug}`),
+        // Liczba domów kultury z linkiem do strony województwo x typ (jeśli
+        // istnieje) - linkowanie w treści do stron segmentów drugiego poziomu.
+        domyKultury: (() => {
+          const cross = geoPages.voivodeshipTypeBySlug(v.slug, 'domy-kultury');
+          return {
+            count: countInstitutions(db, { filters: { voivodeship: v.value, type: 'domy-kultury' } }),
+            href: cross ? cross.path : null,
+          };
+        })(),
       }))
       .sort((a, b) => b.count - a.count),
   };
@@ -100,6 +110,9 @@ router.get('/poradniki/:slug', (req, res) => {
     user: req.user || null,
     guide,
     stats: guide.dynamic ? institutionStats() : null,
+    // Strony miast (lib/geoPages.js) do linków w treści poradników - lista z
+    // danych, żeby poradnik nie linkował do strony, której już nie ma.
+    cityPages: geoPages.cities(),
     title: `${guide.title} — Baza Danych Instytucji Kultury`,
     description: guide.description,
     ogTitle: guide.title,

@@ -17,12 +17,17 @@ const { TERMS_VERSION, isKnownTermsVersion, termsViewName } = require('../lib/le
 const { baseUrl, canonicalUrl } = require('../lib/seo');
 const { organizationSchema } = require('../lib/structuredData');
 const { TIERS, MIN_AMOUNT, priceBreakdown, breakdownFromNet, formatAmount } = require('../lib/pricing');
-const { countInstitutions, countWithContact, queryInstitutions, coverageCounts } = require('../lib/query');
+const {
+  countInstitutions, countWithContact, queryInstitutions, coverageCounts, listSegmentInstitutions, topLocalities,
+} = require('../lib/query');
 const { PUBLIC_FIELDS } = require('../lib/projection');
+const { slugify } = require('../lib/slug');
 const institutionTypes = require('../lib/institutionTypes');
 const voivodeships = require('../lib/voivodeships');
 const geoPages = require('../lib/geoPages');
 const guides = require('../lib/guides');
+const { resolveLastmods } = require('../lib/sitemapLastmod');
+const { displayCase } = require('../lib/textCase');
 
 const router = express.Router();
 
@@ -33,49 +38,59 @@ const viewMtime = (viewRelPath) =>
   fs.statSync(path.join(__dirname, '..', 'views', `${viewRelPath}.ejs`)).mtime.toISOString().slice(0, 10);
 const dataLastmod = () => lastDataUpdateDate().toISOString().slice(0, 10);
 
+// Wersja szablonu stron segmentów - wchodzi do sygnatury lastmod (patrz niżej).
+// Podbij przy zmianie, która realnie zmienia treść tych stron (nowa sekcja,
+// inny układ listy), żeby sitemap zgłosił je Google jako zmienione.
+const SEGMENT_TEMPLATE_VERSION = '2026-10-15';
+
+// Sygnatura strony segmentu: to, co faktycznie renderuje (lista instytucji
+// z flagami kontaktu, liczniki pokrycia). Zmiana danych spoza segmentu nie
+// rusza jego lastmod.
+function segmentSignature(filters) {
+  return JSON.stringify({
+    v: SEGMENT_TEMPLATE_VERSION,
+    total: countInstitutions(db, { filters }),
+    coverage: coverageCounts(db, { filters }),
+    rows: listSegmentInstitutions(db, { filters, limit: 300 }),
+  });
+}
+
 // robots.txt / sitemap.xml (app.js) budowane z tej samej listy publicznych,
 // indeksowalnych tras co render'y poniżej - trzymamy je razem, żeby dodanie
 // nowej strony publicznej nie wymagało pamiętania o osobnym pliku. Strony
-// segmentów (województwo/typ/powiat/przecięcia) generowane programistycznie
-// z tych samych list, którymi renderują się linki krzyżowe. Powiaty i
+// segmentów (województwo/typ/miasto/przecięcia) generowane programistycznie
+// z tych samych list, którymi renderują się linki krzyżowe. Miasta i
 // przecięcia województwo x typ - tylko te z realną treścią (patrz lib/geoPages.js).
-const PUBLIC_PAGES = [
-  { path: '/baza', changefreq: 'daily', priority: '1.0', lastmod: dataLastmod() },
-  ...voivodeships.all().map((v) => ({
-    path: `/baza/wojewodztwo/${v.slug}`,
-    changefreq: 'weekly',
-    priority: '0.6',
-    lastmod: dataLastmod(),
-  })),
-  ...institutionTypes.all().map((t) => ({
-    path: `/baza/typ/${t.slug}`,
-    changefreq: 'weekly',
-    priority: '0.6',
-    lastmod: dataLastmod(),
-  })),
+// lastmod stron danych liczony z ich treści (lib/sitemapLastmod.js), stron
+// statycznych - z daty pliku widoku / wersji dokumentu. Bez changefreq i
+// priority: Google je ignoruje.
+const SEGMENT_PAGES = [
+  { path: '/baza', filters: {} },
+  ...voivodeships.all().map((v) => ({ path: `/baza/wojewodztwo/${v.slug}`, filters: { voivodeship: v.value } })),
+  ...institutionTypes.all().map((t) => ({ path: `/baza/typ/${t.slug}`, filters: { type: t.slug } })),
   ...geoPages.voivodeshipTypes().map((x) => ({
     path: x.path,
-    changefreq: 'weekly',
-    priority: '0.5',
-    lastmod: dataLastmod(),
+    filters: { voivodeship: x.voivodeship.value, type: x.type.slug },
   })),
-  ...geoPages.counties().map((c) => ({
+  ...geoPages.cities().map((c) => ({
     path: c.path,
-    changefreq: 'weekly',
-    priority: '0.5',
-    lastmod: dataLastmod(),
+    filters: { voivodeship: c.voivodeship.value, locality: c.localityValue },
   })),
-  { path: '/faq', changefreq: 'monthly', priority: '0.5', lastmod: dataLastmod() },
-  { path: '/poradniki', changefreq: 'monthly', priority: '0.4', lastmod: guides.all().map((g) => g.updated).sort().pop() },
-  ...guides.all().map((g) => ({
-    path: `/poradniki/${g.slug}`,
-    changefreq: 'monthly',
-    priority: '0.5',
-    lastmod: g.updated,
-  })),
-  { path: '/regulamin', changefreq: 'monthly', priority: '0.3', lastmod: TERMS_VERSION },
-  { path: '/polityka-prywatnosci', changefreq: 'monthly', priority: '0.3', lastmod: viewMtime('legal/polityka-prywatnosci') },
-  { path: '/o-nas', changefreq: 'monthly', priority: '0.4', lastmod: viewMtime('legal/o-nas') },
+  // FAQ pokazuje liczniki z całej bazy i datę aktualizacji.
+  { path: '/faq', filters: {}, extra: dataLastmod() },
+];
+const segmentLastmods = resolveLastmods(
+  SEGMENT_PAGES.map((p) => ({ path: p.path, signature: `${segmentSignature(p.filters)}|${p.extra || ''}` })),
+  { statePath: `${db.name}.lastmod.json` }
+);
+
+const PUBLIC_PAGES = [
+  ...SEGMENT_PAGES.map((p) => ({ path: p.path, lastmod: segmentLastmods.get(p.path) })),
+  { path: '/poradniki', lastmod: guides.all().map((g) => g.updated).sort().pop() },
+  ...guides.all().map((g) => ({ path: `/poradniki/${g.slug}`, lastmod: g.updated })),
+  { path: '/regulamin', lastmod: TERMS_VERSION },
+  { path: '/polityka-prywatnosci', lastmod: viewMtime('legal/polityka-prywatnosci') },
+  { path: '/o-nas', lastmod: viewMtime('legal/o-nas') },
 ];
 
 // BreadcrumbList wspólne dla stron segmentów - jedyne dane strukturalne, jakie
@@ -110,25 +125,6 @@ function sampleInstitutions(filters, limit = 20) {
     pageSize: limit,
     isAuthorized: false,
   }).rows;
-}
-
-function distinctLocalities(rows, limit = 5) {
-  const seen = new Set();
-  const out = [];
-  for (const row of rows) {
-    const locality = row.locality;
-    if (locality && !seen.has(locality)) {
-      seen.add(locality);
-      out.push(locality);
-      if (out.length >= limit) break;
-    }
-  }
-  return out;
-}
-
-function emailCoveragePercent(coverage) {
-  if (!coverage.total || !coverage.fields.email) return 0;
-  return Math.round((coverage.fields.email.filled / coverage.total) * 100);
 }
 
 // Sekcja #cennik na stronie bazy renderuje się z tych samych stałych, którymi
@@ -344,22 +340,87 @@ router.get('/baza', (req, res) => {
   });
 });
 
-// Wspólny render stron segmentów (województwo / typ / powiat / województwo x typ).
-// Różnią się filtrem, nagłówkiem i rozkładami; reszta (próbka, cennik, narzędzie,
-// linki krzyżowe, dane strukturalne BreadcrumbList) jest taka sama.
+// Segmenty do tej wielkości dostają PEŁNĄ listę instytucji wyrenderowaną po
+// stronie serwera (województwa mają 61-243 rekordy, miasta i przecięcia mniej).
+// Większe (strony typu dla całej Polski) zostają przy próbce - lista ponad
+// tysiąca pozycji byłaby ciężka i nieczytelna.
+const FULL_LIST_MAX = 300;
+
+const pct = (part, whole) => (whole ? Math.round((part / whole) * 100) : 0);
+
+function coveragePercents(coverage) {
+  const f = coverage.fields;
+  return {
+    phone: pct(f.phone ? f.phone.filled : 0, coverage.total),
+    email: pct(f.email ? f.email.filled : 0, coverage.total),
+    website: pct(f.website ? f.website.filled : 0, coverage.total),
+  };
+}
+
+// Polski zapis adresu: "ul. Długa 5, 00-001 Poczta"; na wsiach bez nazw ulic
+// numer budynku odnosi się do miejscowości ("Podbucze 5, 38-500 Sanok").
+function formatAddress(row) {
+  const number = [row.building_no, row.unit_no].filter(Boolean).join('/');
+  const line = `${displayCase(row.street || row.locality || '')} ${number}`.trim();
+  const city = [row.postal_code, displayCase(row.post_office || row.locality || '')].filter(Boolean).join(' ');
+  return [line, city].filter(Boolean).join(', ');
+}
+
+// Lista pogrupowana po miejscowości; nagłówek grupy linkuje do strony miasta,
+// jeśli taka istnieje (lib/geoPages.js).
+function groupByLocality(rows, voiSlug) {
+  const groups = new Map();
+  for (const row of rows) {
+    const key = row.locality || '';
+    if (!groups.has(key)) {
+      const city = voiSlug && key ? geoPages.cityBySlug(voiSlug, slugify(key)) : null;
+      groups.set(key, { label: displayCase(key) || 'Bez miejscowości', href: city ? city.path : null, items: [] });
+    }
+    groups.get(key).items.push({
+      name: displayCase(row.name),
+      address: formatAddress(row),
+      hasPhone: row.has_phone,
+      hasEmail: row.has_email,
+      hasWebsite: row.has_website,
+    });
+  }
+  return [...groups.values()];
+}
+
+// Wspólny render stron segmentów (województwo / typ / miasto / województwo x typ).
+// Różnią się filtrem, nagłówkiem i rozkładami; reszta (lista lub próbka, krótka
+// informacja o cenie, narzędzie, linki krzyżowe, BreadcrumbList) jest taka sama.
+// Każda strona dostaje treść liczoną z jej własnych danych (rozkład miejscowości,
+// pokrycie kontaktów na tle całej bazy, pełna lista), żeby nie była szablonem
+// różniącym się tylko nazwą regionu.
 function renderSegment(req, res, opts) {
   const { filters, title, description, canonicalPath, h1, leadHtml, breadcrumb } = opts;
   const total = countInstitutions(db, { filters });
   const coverage = coverageCounts(db, { filters });
-  const sample = sampleInstitutions(filters);
-  const localities = distinctLocalities(sample);
+  const fullList = total <= FULL_LIST_MAX;
+  const voiSlug = opts.voivodeshipSlug || null;
+
+  const listGroups = fullList ? groupByLocality(listSegmentInstitutions(db, { filters, limit: FULL_LIST_MAX }), voiSlug) : [];
+  const sample = fullList ? [] : sampleInstitutions(filters).map((r) => ({
+    ...r,
+    name: displayCase(r.name),
+    voivodeship: displayCase(r.voivodeship),
+    county: displayCase(r.county),
+    locality: displayCase(r.locality),
+  }));
+  // Na stronie miasta rozkład miejscowości nic nie mówi (jedna pozycja).
+  const top = opts.skipTopLocalities
+    ? []
+    : topLocalities(db, { filters, limit: 5 }).map((l) => ({ label: displayCase(l.locality), count: l.count }));
 
   res.render('baza-segment', {
     total,
     coverage,
-    emailPct: emailCoveragePercent(coverage),
-    localities,
-    moreLocalities: total > localities.length,
+    coveragePct: coveragePercents(coverage),
+    coveragePctAll: coveragePercents(coverageCounts(db)),
+    topLocalities: top.length > 1 ? top : [],
+    listGroups,
+    listHeading: opts.listHeading || 'Lista instytucji',
     sample,
     breakdowns: opts.breakdowns || [],
     h1,
@@ -409,11 +470,11 @@ router.get('/baza/wojewodztwo/:slug', (req, res) => {
       rows: typeBreakdownRows(filters, voi.slug),
     },
   ];
-  const countyRows = geoPages
-    .countiesInVoivodeship(voi.slug)
+  const cityRows = geoPages
+    .citiesInVoivodeship(voi.slug)
     .map((c) => ({ label: c.label, count: c.count, href: c.path }));
-  if (countyRows.length) {
-    breakdowns.push({ heading: `Powiaty w województwie ${voi.locative}`, rows: countyRows });
+  if (cityRows.length) {
+    breakdowns.push({ heading: `Miasta z największą liczbą instytucji w województwie ${voi.locative}`, rows: cityRows });
   }
 
   renderSegment(req, res, {
@@ -432,6 +493,8 @@ router.get('/baza/wojewodztwo/:slug', (req, res) => {
     breakdowns,
     initialFilters: { voivodeship: voi.value },
     related: { excludeVoivodeshipSlug: voi.slug },
+    voivodeshipSlug: voi.slug,
+    listHeading: `Lista instytucji kultury w województwie ${voi.locative} według miejscowości`,
   });
 });
 
@@ -472,37 +535,51 @@ router.get('/baza/typ/:slug', (req, res) => {
   });
 });
 
-// Strony programistyczne per powiat - tylko powiaty z realną liczbą instytucji
-// (lib/geoPages.js). Filtr `county` to dopasowanie dokładne (lib/query.js),
-// więc przekazujemy wartość z bazy, nie slug.
+// Dawne strony powiatów - zastąpione stronami miast i pełną listą na stronie
+// województwa (patrz lib/geoPages.js). 301, żeby nie gubić tego, co Google już
+// o nich wie: na stronę miasta o tym samym slugu (dawne powiaty grodzkie, np.
+// /powiat/wroclaw), w pozostałych przypadkach na stronę województwa.
 router.get('/baza/wojewodztwo/:woj/powiat/:powiat', (req, res) => {
-  const county = geoPages.countyBySlug(req.params.woj, req.params.powiat);
-  if (!county) return res.status(404).render('404', { user: req.user || null });
+  const voi = voivodeships.bySlug(req.params.woj);
+  if (!voi) return res.status(404).render('404', { user: req.user || null });
+  const city = geoPages.cityBySlug(voi.slug, req.params.powiat);
+  res.redirect(301, city ? city.path : `/baza/wojewodztwo/${voi.slug}`);
+});
 
-  const voi = county.voivodeship;
-  const filters = { voivodeship: voi.value, county: county.countyValue };
+// Strony programistyczne per miasto - tylko miasta z realną liczbą instytucji
+// (lib/geoPages.js). Filtr `locality` to dopasowanie dokładne (lib/query.js),
+// więc przekazujemy wartość z bazy, nie slug.
+router.get('/baza/wojewodztwo/:woj/miasto/:miasto', (req, res) => {
+  const city = geoPages.cityBySlug(req.params.woj, req.params.miasto);
+  if (!city) return res.status(404).render('404', { user: req.user || null });
+
+  const voi = city.voivodeship;
+  const filters = { voivodeship: voi.value, locality: city.localityValue };
   const total = countInstitutions(db, { filters });
   const rows = typeBreakdownRows(filters, voi.slug);
 
   renderSegment(req, res, {
     filters,
-    title: `Instytucje kultury — ${county.label}, województwo ${voi.label.toLowerCase()} (${total})`,
+    title: `Domy kultury i biblioteki — ${city.label} (${total}) | baza kontaktów`,
     description:
-      `${total} instytucji kultury w ${county.locative} (województwo ${voi.label.toLowerCase()}): domy kultury, ` +
-      'biblioteki, ośrodki i centra kultury z danymi kontaktowymi.',
-    canonicalPath: county.path,
-    h1: `Instytucje kultury w ${county.locative}`,
+      `${total} instytucji kultury w miejscowości ${city.label} (województwo ${voi.label.toLowerCase()}): ` +
+      'domy kultury, biblioteki, ośrodki i centra kultury z adresami. Pobierz listę z kontaktami do CSV, XLSX lub PDF.',
+    canonicalPath: city.path,
+    h1: `Domy kultury, biblioteki i centra kultury — ${city.label}`,
     leadHtml:
-      `W ${county.locative} (województwo ${voi.label.toLowerCase()}) baza obejmuje <strong>${total}</strong> ` +
-      'instytucji kultury.',
+      `Baza obejmuje <strong>${total}</strong> instytucji kultury z siedzibą w miejscowości ${city.label} ` +
+      `(województwo ${voi.label.toLowerCase()}).`,
     breadcrumb: [
       { name: 'Baza Danych Instytucji Kultury', url: canonicalUrl('/baza') },
       { name: voi.label, url: canonicalUrl(`/baza/wojewodztwo/${voi.slug}`) },
-      { name: county.label, url: canonicalUrl(county.path) },
+      { name: city.label, url: canonicalUrl(city.path) },
     ],
-    breakdowns: rows.length ? [{ heading: `Instytucje w ${county.locative} według typu`, rows }] : [],
-    initialFilters: { voivodeship: voi.value, county: county.countyValue },
+    breakdowns: rows.length ? [{ heading: `Instytucje kultury — ${city.label} według typu`, rows }] : [],
+    initialFilters: { voivodeship: voi.value, locality: city.localityValue },
     related: { excludeVoivodeshipSlug: voi.slug },
+    voivodeshipSlug: voi.slug,
+    skipTopLocalities: true,
+    listHeading: `Lista instytucji kultury — ${city.label}`,
   });
 });
 
@@ -539,6 +616,8 @@ router.get('/baza/wojewodztwo/:woj/typ/:typ', (req, res) => {
     breakdowns: rows.length ? [{ heading: `${type.label} w innych województwach`, rows }] : [],
     initialFilters: { voivodeship: voi.value, type: type.slug },
     related: { excludeVoivodeshipSlug: voi.slug, excludeTypeSlug: type.slug },
+    voivodeshipSlug: voi.slug,
+    listHeading: `${type.label} w województwie ${voi.locative} — lista według miejscowości`,
   });
 });
 

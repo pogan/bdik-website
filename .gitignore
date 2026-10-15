@@ -8,6 +8,8 @@ data/sessions.sqlite
 .DS_Store
 data/*.sqlite-shm
 data/*.sqlite-wal
+# Stan lastmod sitemapy (lib/sitemapLastmod.js) - per instalacja, liczony z danych
+data/*.lastmod.json
 # Kopie zapasowe wygenerowanych eksportow (backup plikow zamowien)
 data/exports/
 .claude/worktrees/
