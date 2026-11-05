@@ -1,0 +1,21 @@
+# Do main wolno scalać tylko gałąź staging (albo hotfix/*). Check "only-staging" jest wymagany w rulesecie main.
+name: only-staging
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  only-staging:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sprawdź gałąź źródłową
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          case "$HEAD_REF" in
+            staging|hotfix/*) echo "OK: $HEAD_REF -> main" ;;
+            *) echo "::error::Do main można scalać tylko ze staging (albo hotfix/*), a nie z '$HEAD_REF'."; exit 1 ;;
+          esac
