@@ -1,0 +1,49 @@
+# Wspólny workflow testów dla stron Vamude (Node). Check nazywa się "test" - tę nazwę wpisujesz w rulesetach.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [staging, main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build (jeśli repo go ma)
+        run: npm run build --if-present
+      - name: Testy (jeśli repo je ma)
+        env:
+          # Zmienna repo (Settings → Secrets and variables → Actions → Variables), np. gdy testy wymagają prawdziwej bazy.
+          CI_SKIP_TESTS: ${{ vars.CI_SKIP_TESTS }}
+        run: |
+          if [ "$CI_SKIP_TESTS" = "true" ]; then
+            echo "::warning::Testy pominięte (zmienna repo CI_SKIP_TESTS=true) - zostaje test uruchomienia."
+          elif node -e "const t=(require('./package.json').scripts||{}).test||''; process.exit(t && !t.includes('no test specified') ? 0 : 1)"; then
+            npm test
+          else
+            echo "Repo nie ma testów - zostaje test uruchomienia poniżej."
+          fi
+      - name: Test uruchomienia (strona główna odpowiada 200)
+        env:
+          PORT: "3999"
+        run: |
+          [ -f .env ] || { [ -f .env.example ] && cp .env.example .env || touch .env; }
+          npm start > app.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fs -o /dev/null http://127.0.0.1:3999/; then echo "OK: aplikacja odpowiada"; exit 0; fi
+            sleep 2
+          done
+          echo "::error::Aplikacja nie odpowiedziała na http://127.0.0.1:3999/"
+          cat app.log
+          exit 1
