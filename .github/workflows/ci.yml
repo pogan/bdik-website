@@ -78,3 +78,34 @@ jobs:
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
           # Serwer przyjmuje tylko "<repo> <sha>"; wymuszone polecenie sprawdza, czy commit jest w staging.
           ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "deploy@$DEPLOY_HOST" "$REPO $SHA"
+
+  # Wdrożenie na produkcję (WEBSITES) po zielonym teście na main, czyli po scaleniu PR wydania, który zatwierdzasz.
+  # Działa tylko w repo ze zmienną PRODUCTION_DEPLOY=true i environment "production" (sekrety dostępne tylko dla main).
+  # Serwer sprawdza, że commit należy do main, i sam przywraca poprzednią wersję, jeśli nowa nie odpowiada.
+  deploy-production:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    concurrency:
+      group: deploy-production-${{ github.event.repository.name }}
+      cancel-in-progress: false
+    steps:
+      - name: Tailscale (tag:ci-prod, węzeł tymczasowy)
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          statedir: /tmp/tailscale-state/
+      - name: Wdrożenie na produkcję
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+          REPO: ${{ github.event.repository.name }}
+          SHA: ${{ github.sha }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes "deploy@$DEPLOY_HOST" "$REPO $SHA"
