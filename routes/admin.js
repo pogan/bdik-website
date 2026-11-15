@@ -19,6 +19,7 @@ router.get('/', (req, res) => {
   return res.render('admin-login', {
     user: null,
     loginFailed: req.query.login === 'failed',
+    previewLogin: require('../lib/preview').enabled,
   });
 });
 

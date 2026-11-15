@@ -23,6 +23,9 @@ const adminRoutes = require('./routes/admin');
 const guidesRoutes = require('./routes/guides');
 const { router: pagesRoutes, PUBLIC_PAGES } = require('./routes/pages');
 
+// Tryb podglądu (PREVIEW_LOGIN) tylko na *.staging.vamude.com - inaczej start się nie uda.
+require('./lib/preview').assertPreviewHost();
+
 const app = express();
 
 app.set('trust proxy', 1);
