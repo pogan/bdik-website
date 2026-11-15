@@ -22,9 +22,16 @@
                 Logowanie nie powiodło się. Konto nie ma uprawnień administratora.
               </div>
             <% } %>
+            <% if (typeof previewLogin !== 'undefined' && previewLogin) { %>
+              <div class="alert alert-warning" role="status">
+                Wersja testowa serwisu: logowanie nie wymaga konta Google. Przycisk od razu otwiera panel.
+              </div>
+              <a href="/auth/google" class="btn btn-primary">Wejdź do panelu (wersja testowa)</a>
+            <% } else { %>
             <a href="/auth/google" class="btn btn-primary">
               <i class="bi bi-google me-1"></i>Zaloguj się przez Google
             </a>
+            <% } %>
           </div>
         </div>
       </div>
