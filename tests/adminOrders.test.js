@@ -54,7 +54,13 @@ async function page(query = '') {
   return res.text();
 }
 
-const shown = (body) => [...body.matchAll(/CSV · (\d+)/g)].map((m) => Number(m[1])).sort();
+// Wiersze widoczne na starcie (serwer wysyła wszystkie, ukryte mają d-none).
+const shown = (body) =>
+  [...body.matchAll(/<tr data-status="\w+"( class="d-none")?>[\s\S]*?CSV · (\d+)/g)]
+    .filter((m) => !m[1])
+    .map((m) => Number(m[2]))
+    .sort();
+const sent = (body) => [...body.matchAll(/CSV · (\d+)/g)].length;
 
 test('bez filtra panel pokazuje wszystkie zamówienia i liczniki statusów', async () => {
   const body = await page();
@@ -64,10 +70,11 @@ test('bez filtra panel pokazuje wszystkie zamówienia i liczniki statusów', asy
   assert.match(body, /wygasłe <span class="badge[^"]*">1</);
 });
 
-test('?status=paid pokazuje tylko opłacone', async () => {
+test('?status=paid na starcie pokazuje tylko opłacone', async () => {
   const body = await page('?status=paid');
   assert.deepEqual(shown(body), [101, 102]);
-  assert.match(body, /2 z 4 zamówień/);
+  assert.equal(sent(body), 4, 'pozostałe wiersze są w stronie, tylko ukryte');
+  assert.match(body, /2 z 4<\/span> zamówień/);
 });
 
 test('?status=expired pokazuje tylko wygasłe', async () => {
@@ -77,7 +84,8 @@ test('?status=expired pokazuje tylko wygasłe', async () => {
 test('status bez zamówień pokazuje pusty stan', async () => {
   const body = await page('?status=failed');
   assert.deepEqual(shown(body), []);
-  assert.match(body, /Brak zamówień o tym statusie/);
+  assert.match(body, /<div id="orders-empty" class="card">/);
+  assert.match(body, /id="orders-table" class="[^"]*d-none"/);
 });
 
 test('nieznany status jest ignorowany (wszystkie zamówienia)', async () => {

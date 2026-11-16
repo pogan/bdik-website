@@ -67,7 +67,7 @@ function adminRow(order) {
   };
 }
 
-// Filtr statusu w panelu (?status=paid). Kolejność = kolejność przycisków w widoku.
+// Filtr statusu w panelu. Kolejność = kolejność przycisków w widoku.
 const STATUS_FILTERS = [
   { value: 'paid', label: 'opłacone' },
   { value: 'pending', label: 'oczekuje' },
@@ -75,11 +75,14 @@ const STATUS_FILTERS = [
   { value: 'expired', label: 'wygasłe' },
 ];
 
+// Wysyłamy zawsze wszystkie zamówienia; filtr przełącza widok w przeglądarce
+// (public/js/admin-orders.js). ?status= ustala tylko filtr na starcie, żeby
+// zakładka i odświeżenie pokazywały ten sam widok.
 router.get('/orders', (req, res) => {
   const all = orders.listAll();
   // Nieznana wartość parametru = brak filtra (pokazujemy wszystkie).
   const status = STATUS_FILTERS.some((f) => f.value === req.query.status) ? req.query.status : null;
-  const rows = (status ? all.filter((o) => o.status === status) : all).map(adminRow);
+  const rows = all.map(adminRow);
   const statusFilters = STATUS_FILTERS.map((f) => ({
     ...f,
     count: all.filter((o) => o.status === f.value).length,
