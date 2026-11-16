@@ -6,19 +6,32 @@
 <body>
   <%- include('partials/nav', { user: typeof user !== 'undefined' ? user : null }) %>
 
+  <% const shownCount = status ? orders.filter((o) => o.status === status).length : orders.length; %>
   <main class="container pb-5">
     <div class="d-flex flex-wrap justify-content-between align-items-end mb-3 gap-2">
       <div>
         <h1 class="h4 mb-1">Zamówienia</h1>
-        <p class="text-secondary small mb-0"><%= orders.length %> zamówień · link klienta ważny <%= ttlHours %> godz. (do <%= maxDownloads %> pobrań)</p>
+        <p class="text-secondary small mb-0"><span id="orders-count"><%= status ? `${shownCount} z ${totalCount}` : totalCount %></span> zamówień · link klienta ważny <%= ttlHours %> godz. (do <%= maxDownloads %> pobrań)</p>
       </div>
       <a href="/baza" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Do bazy</a>
     </div>
 
+    <nav id="status-filter" class="d-flex flex-wrap gap-2 mb-3" aria-label="Filtr statusu zamówienia">
+      <a href="/admin/orders" data-status="" class="btn btn-sm <%= status ? 'btn-outline-secondary' : 'btn-secondary' %>"<%- status ? '' : ' aria-current="page"' %>>
+        wszystkie <span class="badge text-bg-light ms-1"><%= totalCount %></span>
+      </a>
+      <% statusFilters.forEach((f) => { %>
+        <a href="/admin/orders?status=<%= f.value %>" data-status="<%= f.value %>" class="btn btn-sm <%= status === f.value ? 'btn-secondary' : 'btn-outline-secondary' %>"<%- status === f.value ? ' aria-current="page"' : '' %>>
+          <%= f.label %> <span class="badge text-bg-light ms-1"><%= f.count %></span>
+        </a>
+      <% }); %>
+    </nav>
+
     <% if (!orders.length) { %>
       <div class="card"><div class="card-body text-center text-secondary py-5">Brak zamówień.</div></div>
     <% } else { %>
-      <div class="table-responsive bg-white border rounded">
+      <div id="orders-empty" class="card<%= shownCount ? ' d-none' : '' %>"><div class="card-body text-center text-secondary py-5">Brak zamówień o tym statusie.</div></div>
+      <div id="orders-table" class="table-responsive bg-white border rounded<%= shownCount ? '' : ' d-none' %>">
         <table class="table table-hover align-middle mb-0 small">
           <thead>
             <tr>
@@ -34,7 +47,7 @@
           </thead>
           <tbody>
             <% orders.forEach((o) => { %>
-              <tr>
+              <tr data-status="<%= o.status %>"<%- status && o.status !== status ? ' class="d-none"' : '' %>>
                 <td class="text-nowrap text-secondary"><%= o.createdAt %></td>
                 <td>
                   <% if (o.status === 'paid') { %>
@@ -43,6 +56,8 @@
                     <span class="badge text-bg-warning">oczekuje</span>
                   <% } else if (o.status === 'failed') { %>
                     <span class="badge text-bg-danger">nieudane</span>
+                  <% } else if (o.status === 'expired') { %>
+                    <span class="badge text-bg-secondary">wygasłe</span>
                   <% } else { %>
                     <span class="badge text-bg-secondary"><%= o.status %></span>
                   <% } %>
@@ -102,5 +117,6 @@
 
   <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
   <script src="/js/cookies.js"></script>
+  <script src="/js/admin-orders.js"></script>
 </body>
 </html>
