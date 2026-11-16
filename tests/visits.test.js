@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('crypto');
 const db = require('../db');
-const { recordVisit, recordEvent, isClientEvent, isKnownEvent, EVENTS } = require('../lib/visits');
+const { recordEvent, isClientEvent, isKnownEvent, EVENTS } = require('../lib/visits');
 
 // Te same adresy co dokumentacyjne zakresy TEST-NET - nie kolidują z niczym
 // prawdziwym; po każdym teście sprzątamy wiersze po hashu.
@@ -16,29 +16,6 @@ function cleanup(ip) {
   db.prepare('DELETE FROM events WHERE ip_hash = ?').run(h);
   db.prepare('DELETE FROM event_log WHERE ip_hash = ?').run(h);
 }
-
-test('recordVisit: źródło zapisywane przy pierwszej wizycie, nie nadpisywane przy kolejnych', () => {
-  const ip = '203.0.113.10';
-  cleanup(ip);
-
-  recordVisit(ip, {
-    referrer: 'https://www.facebook.com/',
-    utmSource: 'facebook',
-    utmMedium: 'social',
-    utmCampaign: 'lipiec',
-    landingPath: '/baza',
-  });
-  recordVisit(ip, { referrer: 'https://www.google.com/', utmSource: 'google', landingPath: '/regulamin' });
-
-  const row = db.prepare('SELECT * FROM visits WHERE ip_hash = ?').get(hashIp(ip));
-  assert.equal(row.utm_source, 'facebook');
-  assert.equal(row.utm_medium, 'social');
-  assert.equal(row.utm_campaign, 'lipiec');
-  assert.equal(row.referrer, 'https://www.facebook.com/');
-  assert.equal(row.landing_path, '/baza');
-
-  cleanup(ip);
-});
 
 test('recordEvent: liczy osoby w events i każde wystąpienie w event_log z metadanymi', () => {
   const ip = '203.0.113.11';
