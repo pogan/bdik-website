@@ -19,6 +19,7 @@ router.get('/', (req, res) => {
   return res.render('admin-login', {
     user: null,
     loginFailed: req.query.login === 'failed',
+    previewLogin: require('../lib/preview').enabled,
   });
 });
 
@@ -82,8 +83,9 @@ router.get('/stats', (req, res) => {
   res.render('admin-stats', {
     user: req.user || null,
     funnel: stats.funnel(),
+    funnelSince: stats.funnelSince(),
     quoteBuckets: stats.quoteBuckets(),
-    sources: stats.sources(),
+    archive: stats.archive(),
     daily: stats.daily(),
     revenue: stats.revenue(),
   });

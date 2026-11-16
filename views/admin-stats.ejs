@@ -11,18 +11,22 @@
       <div>
         <h1 class="h4 mb-1">Statystyki lejka sprzedażowego</h1>
         <p class="text-secondary small mb-0">
-          Unikalne osoby liczone po zahaszowanym IP · przychód netto z opłaconych zamówień:
+          Odwiedziny bez botów i bez ruchu administratora · przychód netto z opłaconych zamówień:
           <span class="fw-semibold text-body"><%= revenue.netLabel %></span>
         </p>
       </div>
-      <a href="/baza" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Do bazy</a>
+      <div class="d-flex gap-2">
+        <a href="/admin/odwiedziny" class="btn btn-outline-primary btn-sm"><i class="bi bi-graph-up me-1"></i>Odwiedziny: szczegóły</a>
+        <a href="/baza" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Do bazy</a>
+      </div>
     </div>
 
     <div class="row g-3">
       <div class="col-12 col-lg-6">
         <div class="card h-100">
           <div class="card-body">
-            <h2 class="h6 mb-3">Lejek: od wizyty do zapłaty</h2>
+            <h2 class="h6 mb-1">Lejek: od wizyty do zapłaty</h2>
+            <p class="text-secondary small mb-3">Od <%= funnelSince %> (start statystyk bez botów).</p>
             <table class="table table-sm align-middle mb-0 small">
               <thead>
                 <tr><th>Krok</th><th class="text-end">Liczba</th><th class="text-end">% odwiedzin</th></tr>
@@ -74,12 +78,19 @@
       <div class="col-12 col-lg-6">
         <div class="card h-100">
           <div class="card-body">
-            <h2 class="h6 mb-3">Źródła pierwszej wizyty</h2>
+            <h2 class="h6 mb-1">Archiwum: stary licznik odwiedzin</h2>
+            <p class="text-secondary small mb-3">
+              <% if (archive.from) { %><%= archive.from %> – <%= archive.to %> · <% } %>
+              <span class="fw-semibold text-body"><%= archive.visitors.toLocaleString('pl-PL') %></span> unikalnych adresów IP.
+              Tylko do wglądu: liczby zawierają ruch botów, nowe dane są w
+              <a href="/admin/odwiedziny">odwiedzinach</a>.
+            </p>
+            <% const sources = archive.sources; %>
             <% if (!sources.length) { %>
-              <p class="text-secondary small mb-0">Brak danych o źródłach (zbierane od wdrożenia tej wersji).</p>
+              <p class="text-secondary small mb-0">Brak danych o źródłach w archiwum.</p>
             <% } else { %>
               <table class="table table-sm align-middle mb-2 small">
-                <thead><tr><th>Źródło (UTM lub referrer)</th><th class="text-end">Osoby</th></tr></thead>
+                <thead><tr><th>Źródło pierwszej wizyty (UTM lub referrer)</th><th class="text-end">Adresy IP</th></tr></thead>
                 <tbody>
                   <% sources.forEach((s) => { %>
                     <tr><td><%= s.label %></td><td class="text-end fw-semibold"><%= s.value.toLocaleString('pl-PL') %></td></tr>
@@ -107,7 +118,7 @@
                   <thead>
                     <tr>
                       <th>Dzień</th>
-                      <th class="text-end">Nowi odwiedzający</th>
+                      <th class="text-end">Osoby</th>
                       <th class="text-end">Wyceny</th>
                       <th class="text-end">Zamówienia</th>
                       <th class="text-end">Opłacone</th>

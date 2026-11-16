@@ -67,7 +67,37 @@
 <p>Sprzedawca nie gwarantuje kompletności ani zgodności danych ze stanem faktycznym; część
   rekordów nie zawiera pełnych danych kontaktowych.</p>
 
-<h2 class="h5 mt-4" id="cookies">4. Pliki cookies</h2>
+<h2 class="h5 mt-4" id="statystyki">4. Statystyki odwiedzin (bez plików cookies)</h2>
+<p>Aby wiedzieć, ile osób odwiedza Serwis, skąd przychodzą i które strony oglądają, nasz serwer
+  przy każdym wyświetleniu strony zapisuje: datę i godzinę, adres odwiedzonej podstrony, adres
+  strony, z której nastąpiło przejście (bez parametrów zapytania), parametry kampanii z linku
+  (<code>utm_*</code>), rodzaj przeglądarki, systemu i urządzenia (bez numerów wersji) oraz
+  identyfikator odwiedzającego.</p>
+<ul>
+  <li><strong>Identyfikator</strong> jest skrótem kryptograficznym wyliczanym z adresu IP oraz
+    rodzaju przeglądarki i systemu przy użyciu tajnego klucza. Samego adresu IP nie zapisujemy.
+    Identyfikator pozwala odróżnić nowe wizyty od powracających, ale nie pozwala bezpośrednio
+    ustalić, kim jest odwiedzający; traktujemy go jednak jako dane osobowe (dane
+    spseudonimizowane).</li>
+  <li><strong>Działania w Serwisie:</strong> zapisujemy też wybrane kroki prowadzące do zakupu
+    (np. zmiana filtra, pobranie próbki, otwarcie okna eksportu, obejrzenie wyceny wraz z jej
+    kwotą, rozpoczęcie płatności) powiązane ze skrótem SHA-256 adresu IP, żeby policzyć, ile osób
+    dochodzi do kolejnych kroków.</li>
+  <li><strong>Wcześniejszy licznik:</strong> do listopada 2026 r. odwiedziny liczył licznik
+    zapisujący skrót SHA-256 adresu IP wraz ze źródłem i stroną pierwszej wizyty. Te dane
+    zachowujemy w celach archiwalnych na zasadach opisanych w tej sekcji; nic już do nich nie
+    dopisujemy.</li>
+</ul>
+<p>Nie używamy do tego plików cookies ani innych informacji zapisywanych na Twoim urządzeniu.
+  Dane są przechowywane wyłącznie na serwerze Serwisu i nie przekazujemy ich innym podmiotom
+  (poza dostawcą serwera, który przetwarza je w naszym imieniu). Podstawa: art. 6 ust. 1 lit. f
+  RODO (prawnie uzasadniony interes polegający na prowadzeniu statystyk i rozwijaniu Serwisu).
+  Dane przechowujemy przez okres działania Serwisu i okresowo je przeglądamy, usuwając te, które
+  nie są już potrzebne do celów statystycznych. Możesz wnieść sprzeciw wobec takiego
+  przetwarzania (art. 21 RODO), pisząc na
+  <a href="mailto:<%= seller.email %>"><%= seller.email %></a>.</p>
+
+<h2 class="h5 mt-4" id="cookies">5. Pliki cookies</h2>
 <ul>
   <li><strong>Cookie sesji (niezbędny):</strong> utrzymuje stan sesji i logowania. Jest
     konieczny do działania Serwisu, dlatego nie wymaga zgody. Ważność do 30 dni.</li>

@@ -1,9 +1,15 @@
 const express = require('express');
+const db = require('../db');
 const { passport, googleConfigured } = require('../lib/auth');
+const preview = require('../lib/preview');
 
 const router = express.Router();
 
 router.get('/auth/google', (req, res, next) => {
+  // Podgląd dla klienta: logowanie zawsze się udaje, bez Google (lib/preview.js).
+  if (preview.enabled) {
+    return req.logIn(preview.previewUser(db), (err) => (err ? next(err) : res.redirect('/admin')));
+  }
   if (!googleConfigured) {
     return res
       .status(503)
@@ -15,7 +21,7 @@ router.get('/auth/google', (req, res, next) => {
 router.get(
   '/auth/google/callback',
   (req, res, next) => {
-    if (!googleConfigured) return res.redirect('/admin');
+    if (!googleConfigured || preview.enabled) return res.redirect('/admin');
     return passport.authenticate('google', { failureRedirect: '/admin?login=failed' })(req, res, next);
   },
   (req, res) => res.redirect('/admin')

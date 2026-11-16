@@ -34,17 +34,20 @@ jobs:
           else
             echo "Repo nie ma testów - zostaje test uruchomienia poniżej."
           fi
-      - name: Test uruchomienia (strona główna odpowiada 200)
+      - name: Test uruchomienia (/healthz albo strona główna odpowiada 200)
         env:
           PORT: "3999"
         run: |
           [ -f .env ] || { [ -f .env.example ] && cp .env.example .env || touch .env; }
           npm start > app.log 2>&1 &
           for i in $(seq 1 30); do
-            if curl -fs -o /dev/null http://127.0.0.1:3999/; then echo "OK: aplikacja odpowiada"; exit 0; fi
+            # /healthz (vamude-kit) musi dać 200 - 503 to błąd któregoś checku; bez /healthz (404) wystarczy "/".
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3999/healthz || true)
+            if [ "$code" = 200 ]; then echo "OK: /healthz"; curl -s http://127.0.0.1:3999/healthz; echo; exit 0; fi
+            if [ "$code" = 404 ] && curl -fs -o /dev/null http://127.0.0.1:3999/; then echo "OK: aplikacja odpowiada (bez /healthz)"; exit 0; fi
             sleep 2
           done
-          echo "::error::Aplikacja nie odpowiedziała na http://127.0.0.1:3999/"
+          echo "::error::Aplikacja nie odpowiedziała 200 na http://127.0.0.1:3999/healthz ani /"
           cat app.log
           exit 1
 

@@ -11,10 +11,10 @@ const { passport } = require('./lib/auth');
 const { isAdmin } = require('./lib/projection');
 const { seller } = require('./lib/sellerInfo');
 const { TERMS_VERSION } = require('./lib/legal');
-const { APP_VERSION } = require('./lib/version');
+const { readVersion, healthz } = require('vamude-kit');
 const { baseUrl, canonicalUrl } = require('./lib/seo');
 const { organizationSchema, websiteSchema } = require('./lib/structuredData');
-const { recordVisit } = require('./lib/visits');
+const siteStats = require('./lib/siteStats');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const paymentRoutes = require('./routes/payments');
@@ -22,6 +22,11 @@ const webhookRoutes = require('./routes/webhooks');
 const adminRoutes = require('./routes/admin');
 const guidesRoutes = require('./routes/guides');
 const { router: pagesRoutes, PUBLIC_PAGES } = require('./routes/pages');
+
+// Tryb podglądu (PREVIEW_LOGIN) tylko na *.staging.vamude.com - inaczej start się nie uda.
+require('./lib/preview').assertPreviewHost();
+
+const APP_VERSION = readVersion({ root: __dirname });
 
 const app = express();
 
@@ -92,33 +97,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Licznik odwiedzin: tylko realne wejścia na strony (GET, poza API, panelem
-// admina i logowaniem), żeby wywołania AJAX-owe i callbacki OAuth nie zawyżały
-// liczby. Własne wejścia admina też pomijamy - inaczej statystyka mierzyłaby
-// głównie pracę nad serwisem (to samo dla zdarzeń, patrz routes/api.js).
-// Przy pierwszej wizycie zapisujemy też źródło (referrer + parametry utm_* z
-// linków wrzucanych w social media) i stronę wejścia - patrz /admin/stats.
-app.use((req, res, next) => {
-  if (
-    req.method === 'GET' &&
-    !res.locals.isAdmin &&
-    req.path !== '/healthz' &&
-    !req.path.startsWith('/api') &&
-    !req.path.startsWith('/admin') &&
-    !req.path.startsWith('/auth')
-  ) {
-    recordVisit(req.ip, {
-      referrer: req.get('referer'),
-      utmSource: typeof req.query.utm_source === 'string' ? req.query.utm_source : null,
-      utmMedium: typeof req.query.utm_medium === 'string' ? req.query.utm_medium : null,
-      utmCampaign: typeof req.query.utm_campaign === 'string' ? req.query.utm_campaign : null,
-      landingPath: req.path,
-    });
-  }
-  next();
-});
+// Statystyki odwiedzin (vamude-kit, lib/siteStats.js): tylko strony HTML z kodem
+// 200, bez API, panelu, logowania i ruchu admina; boty liczone osobno. Panel
+// szczegółów: /admin/odwiedziny (tylko admin), lejek sprzedażowy: /admin/stats.
+app.use(siteStats.middleware);
+app.use(siteStats.panel);
 
-app.get('/healthz', (req, res) => res.json({ status: 'ok', version: APP_VERSION.version, commit: APP_VERSION.commit }));
+app.get('/healthz', healthz({ version: APP_VERSION, checks: { db: () => db.prepare('SELECT 1').get() } }));
 
 // robots.txt / sitemap.xml zbudowane z PUBLIC_PAGES (routes/pages.js) - tej
 // samej listy publicznych, indeksowalnych tras co render'y w tamtym pliku,
