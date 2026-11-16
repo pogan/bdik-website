@@ -67,11 +67,29 @@ function adminRow(order) {
   };
 }
 
+// Filtr statusu w panelu (?status=paid). Kolejność = kolejność przycisków w widoku.
+const STATUS_FILTERS = [
+  { value: 'paid', label: 'opłacone' },
+  { value: 'pending', label: 'oczekuje' },
+  { value: 'failed', label: 'nieudane' },
+  { value: 'expired', label: 'wygasłe' },
+];
+
 router.get('/orders', (req, res) => {
-  const rows = orders.listAll().map(adminRow);
+  const all = orders.listAll();
+  // Nieznana wartość parametru = brak filtra (pokazujemy wszystkie).
+  const status = STATUS_FILTERS.some((f) => f.value === req.query.status) ? req.query.status : null;
+  const rows = (status ? all.filter((o) => o.status === status) : all).map(adminRow);
+  const statusFilters = STATUS_FILTERS.map((f) => ({
+    ...f,
+    count: all.filter((o) => o.status === f.value).length,
+  }));
   res.render('admin-orders', {
     user: req.user || null,
     orders: rows,
+    totalCount: all.length,
+    status,
+    statusFilters,
     ttlHours: orders.DOWNLOAD_TTL_HOURS,
     maxDownloads: orders.MAX_DOWNLOADS,
   });
