@@ -116,3 +116,26 @@ test('dawne strony powiatów przekierowują 301 na województwo lub miasto', asy
   assert.equal(res2.status, 301);
   assert.equal(res2.headers.get('location'), city.path);
 });
+
+test('/baza: liczby z bazy, próbka w hero, kolumny eksportu i sekcja "Dla kogo"', async () => {
+  const { status, body } = await get('/baza');
+  assert.equal(status, 200);
+  assert.doesNotMatch(body, /2&nbsp;200\+/, 'liczba instytucji ma pochodzić z bazy');
+  assert.match(body, /class="hero-note"/);
+  const sampleLinks = body.match(/data-sample-download/g) || [];
+  assert.equal(sampleLinks.length, 2, 'próbka w hero i w kroku 4');
+  assert.match(body, /Jakie kolumny są w pliku\?/);
+  assert.match(body, /Data rozpoczęcia działalności/);
+  assert.match(body, /id="dla-kogo"/);
+  for (const g of guides.all()) assert.ok(body.includes(`/poradniki/${g.slug}`), `brak linku do ${g.slug}`);
+  assert.match(body, /src="\/js\/lead\.js"/);
+});
+
+test('poradniki mają próbkę i formularz zapisu', async () => {
+  for (const g of guides.all()) {
+    const { body } = await get(`/poradniki/${g.slug}`);
+    assert.match(body, /id="lead-form"/, `${g.slug}: brak formularza`);
+    assert.match(body, /przykladowa-lista-instytucji-kultury\.pdf/, `${g.slug}: brak próbki`);
+    assert.match(body, /src="\/js\/lead\.js"/, `${g.slug}: brak lead.js`);
+  }
+});

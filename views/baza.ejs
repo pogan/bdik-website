@@ -13,21 +13,27 @@
           <span class="hero-eyebrow"><span class="dot"></span>Dla artystów, zespołów i animatorów kultury</span>
           <h1>Dotrzyj do instytucji kultury, które <span class="accent">szukają Twojej sztuki</span>.</h1>
           <p class="hero-lead">
-            Ponad 2&nbsp;200 domów kultury, bibliotek i centrów kultury w jednej,
+            <%= counts.total %> domów kultury, bibliotek i centrów kultury w jednej,
             uporządkowanej bazie. Filtruj po województwie, sprawdź dane kontaktowe
             i wyeksportuj gotową listę pod trasę koncertową, wystawę lub warsztaty.
           </p>
           <div class="hero-cta">
-            <a href="#tool" class="btn btn-hero btn-lg"><i class="bi bi-search me-2"></i>Przeglądaj bazę</a>
-            <a href="#jak" class="btn btn-hero-ghost btn-lg">Jak to działa</a>
+            <a href="#tool" class="btn btn-hero btn-lg"><i class="bi bi-geo-alt me-2"></i>Sprawdź swój region</a>
+            <a href="/pliki/przykladowa-lista-instytucji-kultury.pdf" class="btn btn-hero-ghost btn-lg" data-sample-download download><i class="bi bi-file-earmark-arrow-down me-2"></i>Pobierz przykład</a>
             <a href="#cennik" class="btn btn-hero-ghost btn-lg">Cennik</a>
           </div>
           <div class="hero-stats">
-            <div class="stat"><div class="num">2&nbsp;200+</div><div class="lbl">instytucji kultury</div></div>
+            <div class="stat"><div class="num"><%= counts.total %></div><div class="lbl">instytucji kultury</div></div>
             <div class="stat"><div class="num">16</div><div class="lbl">województw</div></div>
             <div class="stat"><div class="num">CSV · XLSX · PDF</div><div class="lbl">formaty eksportu</div></div>
             <div class="stat"><div class="num"><%= dataUpdatedAt %></div><div class="lbl">ostatnia aktualizacja danych</div></div>
           </div>
+          <p class="hero-note">
+            W tym <%= counts.billable %> z telefonem lub e-mailem: płacisz tylko za te rekordy.
+            Typy instytucji nie sumują się do całości: kilka nazw pasuje do dwóch typów
+            (np. „ośrodek kultury i dom kultury”), a ok. <%= counts.untypedPct %>% (galerie,
+            fundacje, fora kultury) nie pasuje do żadnego z nich, ale też jest w bazie.
+          </p>
           <div class="hero-trust">
             <span class="item"><i class="bi bi-patch-check-fill"></i>Dane z publicznych rejestrów</span>
             <span class="item"><i class="bi bi-tag-fill"></i>Jednorazowo, od <%= cennik.minGrossLabel %> brutto</span>
@@ -69,31 +75,25 @@
               <div class="st-title">Pobierz przykładową listę</div>
               <p class="st-desc">Zobacz, jak wygląda plik przed zakupem: 16 prawdziwych instytucji — po jednej z każdego województwa, z kompletem danych kontaktowych. Próbka jest w PDF; eksport w CSV i XLSX zawiera dodatkowo m.in. NIP, PKD i daty.</p>
             </div>
-            <a class="btn btn-primary" id="sample-download" href="/pliki/przykladowa-lista-instytucji-kultury.pdf" download>Pobierz przykład (PDF)</a>
+            <a class="btn btn-primary" id="sample-download" data-sample-download href="/pliki/przykladowa-lista-instytucji-kultury.pdf" download>Pobierz przykład (PDF)</a>
           </div>
-          <!-- Opcjonalny lead: próbka jest dostępna od ręki powyżej; e-mail to
-               dodatkowa droga (z kodem rabatowym), nie bramka. -->
-          <form id="lead-form" class="lead-capture mt-3" novalidate>
-            <div class="small fw-semibold">Wolisz na e-mail? Wyślemy Ci próbkę i kod rabatowy na pierwszy eksport.</div>
-            <div class="d-flex flex-wrap gap-2 mt-2">
-              <input type="email" class="form-control form-control-sm" id="lead-email"
-                     placeholder="twoj@adres.pl" autocomplete="email" style="max-width:260px" required>
-              <button type="submit" class="btn btn-outline-primary btn-sm" id="lead-submit">Wyślij próbkę</button>
-            </div>
-            <div class="form-check mt-2">
-              <input class="form-check-input" type="checkbox" id="lead-consent">
-              <label class="form-check-label lead-consent-label" for="lead-consent">
-                Chcę otrzymać na podany adres próbkę oraz pojedyncze wiadomości o bazie (np. kod
-                rabatowy, informacja o aktualizacji danych). Zgodę mogę wycofać w każdej chwili —
-                <a href="/polityka-prywatnosci" target="_blank" rel="noopener">Polityka prywatności</a>.
-              </label>
-            </div>
-            <div class="small mt-1 d-none" id="lead-status"></div>
-          </form>
+          <% const kolumnyLabel = (n) => (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'kolumny' : 'kolumn'); %>
+          <details class="sample-columns mt-2">
+            <summary>Jakie kolumny są w pliku?</summary>
+            <p class="mb-1 mt-2"><strong>CSV i XLSX (<%= exportColumns.full.length %> <%= kolumnyLabel(exportColumns.full.length) %>):</strong>
+              <%= exportColumns.full.join(' · ') %></p>
+            <p class="mb-1"><strong>PDF (<%= exportColumns.pdf.length %> <%= kolumnyLabel(exportColumns.pdf.length) %>, mieści się na wydruku):</strong>
+              <%= exportColumns.pdf.join(' · ') %></p>
+            <p class="mb-0 text-secondary">XLSX ma dodatkowo arkusz z licencją. Plik nadaje się do korespondencji seryjnej
+              w Wordzie, Gmailu czy programie do mailingu.</p>
+          </details>
+          <%- include('partials/lead-form') %>
         </div>
       </div>
     </div>
   </section>
+
+  <%- include('partials/audience') %>
 
   <%- include('partials/pricing') %>
 
@@ -120,6 +120,7 @@
   </script>
   <script src="/js/checkout.js"></script>
   <script src="/js/table.js"></script>
+  <script src="/js/lead.js"></script>
   <script src="/js/cookies.js"></script>
 </body>
 </html>
