@@ -150,7 +150,10 @@ app.get('/', (req, res) => {
   // powinna przekazywać pełną wagę SEO na /baza zamiast rozbijać ją między dwa adresy.
   // Dev: 302, bo Chrome trwale cache'uje 301 per-origin (http://localhost:3000)
   // i przekierowanie "zaraża" każdą inną aplikację uruchomioną na tym porcie.
-  res.redirect(process.env.NODE_ENV === 'production' ? 301 : 302, '/baza');
+  // Query string (utm_* z linków w social mediach) idzie dalej - inaczej link
+  // na bdik.pl/?utm_source=... gubiłby źródło, bo statystyki liczą tylko 200.
+  const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+  res.redirect(process.env.NODE_ENV === 'production' ? 301 : 302, `/baza${qs}`);
 });
 
 app.use('/', guidesRoutes);

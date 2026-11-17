@@ -1,7 +1,7 @@
     <!-- Opcjonalny lead: próbka jest dostępna od ręki powyżej; e-mail to
          dodatkowa droga (z kodem rabatowym), nie bramka. -->
     <form id="lead-form" class="lead-capture mt-3" novalidate>
-      <div class="small fw-semibold"><%= typeof leadIntro !== 'undefined' ? leadIntro : 'Wolisz na e-mail? Wyślemy Ci próbkę i kod rabatowy na pierwszy eksport.' %></div>
+      <div class="small fw-semibold"><%= typeof leadIntro !== 'undefined' ? leadIntro : 'Wolisz na e-mail? Wyślemy Ci próbkę i kod rabatowy na pierwszy eksport:' %> <span class="text-nowrap"><%= promoLabel %></span></div>
       <div class="d-flex flex-wrap gap-2 mt-2">
         <input type="email" class="form-control form-control-sm" id="lead-email"
                placeholder="twoj@adres.pl" autocomplete="email" style="max-width:260px" required>
