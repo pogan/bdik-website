@@ -54,6 +54,22 @@ test('rekord z samą stroną WWW trafia do pliku gratis, telefon albo e-mail wys
   );
 });
 
+test('filtr "tylko z telefonem i e-mailem" wymaga obu kanałów', () => {
+  withFixtures(
+    [
+      { regon: '999999911', name: 'TESTOWY OŚRODEK OBA', phone: '+48111111111', email: 'a@example.pl' },
+      { regon: '999999912', name: 'TESTOWY OŚRODEK TYLKO TELEFON', phone: '+48111111112' },
+      { regon: '999999913', name: 'TESTOWY OŚRODEK TYLKO E-MAIL', email: 'b@example.pl' },
+      { regon: '999999914', name: 'TESTOWY OŚRODEK PUSTY E-MAIL', phone: '+48111111113', email: '  ' },
+    ],
+    (filters) => {
+      assert.equal(countInstitutions(db, { filters: { ...filters, contact: 'both' } }), 1);
+      assert.equal(countInstitutions(db, { filters: { ...filters, contact: 'any' } }), 4);
+      assert.match(describeFilters({ ...filters, contact: 'both' }), /tylko z telefonem i e-mailem/);
+    }
+  );
+});
+
 test('filtr contact zawęża wyniki i respektuje pozostałe filtry', () => {
   const all = countInstitutions(db, { filters: { voivodeship: 'POMORSKIE' } });
   const withEmail = countInstitutions(db, { filters: { voivodeship: 'POMORSKIE', contact: 'email' } });

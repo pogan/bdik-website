@@ -257,6 +257,8 @@ router.get('/baza', (req, res) => {
     cennik,
     counts: {
       total: totalRows.toLocaleString('pl-PL'),
+      // Licznik w hero: w dół do pełnej setki, ze znakiem "+" w widoku.
+      totalRounded: (Math.floor(totalRows / 100) * 100).toLocaleString('pl-PL'),
       billable: billableRows.toLocaleString('pl-PL'),
       untypedPct: totalRows ? Math.round(((totalRows - typedRows) / totalRows) * 100) : 0,
     },

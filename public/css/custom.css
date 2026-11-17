@@ -171,6 +171,17 @@ a:hover { color: var(--accent-strong); }
   box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .5);
 }
 .btn-hero:hover { background: #f1f3fb; color: var(--ink); transform: translateY(-1px); }
+
+/* Główne CTA w hero lekko pulsuje (skala + poświata), żeby przyciągnąć wzrok
+   z wejść z social mediów. Na hover animacja staje; bez ruchu dla osób, które
+   go wyłączyły w systemie. */
+.btn-hero-pulse { animation: hero-pulse 2.4s ease-in-out infinite; }
+.btn-hero-pulse:hover, .btn-hero-pulse:focus-visible { animation: none; }
+@keyframes hero-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .5), 0 0 0 0 rgba(169, 155, 255, 0); }
+  50% { transform: scale(1.04); box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .5), 0 0 22px 4px rgba(169, 155, 255, .45); }
+}
+@media (prefers-reduced-motion: reduce) { .btn-hero-pulse { animation: none; } }
 .btn-hero-ghost {
   background: rgba(255, 255, 255, .06); color: #e8ecf6;
   border: 1px solid rgba(255, 255, 255, .2); padding: .7rem 1.25rem; font-weight: 600;

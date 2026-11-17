@@ -117,10 +117,14 @@ test('dawne strony powiatów przekierowują 301 na województwo lub miasto', asy
   assert.equal(res2.headers.get('location'), city.path);
 });
 
-test('/baza: liczby z bazy, próbka w hero, kolumny eksportu i sekcja "Dla kogo"', async () => {
+test('/baza: licznik z bazy, CTA, filtry kontaktu, próbka w hero, kolumny eksportu i sekcja "Dla kogo"', async () => {
   const { status, body } = await get('/baza');
   assert.equal(status, 200);
   assert.doesNotMatch(body, /2&nbsp;200\+/, 'liczba instytucji ma pochodzić z bazy');
+  assert.match(body, /<div class="num">[\d\u00a0 ]*00\+<\/div>/, 'licznik zaokrąglony do setek ze znakiem +');
+  assert.match(body, /btn-hero-pulse[^>]*>.*Przeglądaj bazę/);
+  assert.match(body, /value="both"/);
+  assert.doesNotMatch(body, /<option value="website">/, 'filtr WWW ukryty w GUI');
   assert.match(body, /class="hero-note"/);
   const sampleLinks = body.match(/data-sample-download/g) || [];
   assert.equal(sampleLinks.length, 2, 'próbka w hero i w kroku 4');
