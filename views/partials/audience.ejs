@@ -1,0 +1,33 @@
+<%# Sekcja "Dla kogo" - wejście z postów kampanii pod konkretną personę, każda
+    karta prowadzi do poradnika dla tej grupy i do narzędzia. %>
+<section class="audience" id="dla-kogo">
+  <div class="container">
+    <h2 class="audience-title">Dla kogo jest baza?</h2>
+    <div class="row g-3">
+      <div class="col-12 col-md-4">
+        <div class="audience-card">
+          <i class="bi bi-music-note-beamed"></i>
+          <h3>Muzycy i zespoły</h3>
+          <p>Lista domów i ośrodków kultury na trasę koncertową albo sezon plenerowy: dni miast, dożynki, koncerty kameralne.</p>
+          <a href="/poradniki/<%= audienceGuides.koncert.slug %>">Jak zaproponować koncert</a>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="audience-card">
+          <i class="bi bi-easel"></i>
+          <h3>Prowadzący warsztaty i edukatorzy</h3>
+          <p>Kontakty do bibliotek i centrów kultury, które zamawiają zajęcia na ferie, wakacje i cały rok.</p>
+          <a href="/poradniki/<%= audienceGuides.warsztaty.slug %>">Jak napisać ofertę warsztatów</a>
+        </div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="audience-card">
+          <i class="bi bi-briefcase"></i>
+          <h3>Agencje i organizatorzy</h3>
+          <p>Gotowa lista do imiennych zapytań w wielu regionach naraz, bez tygodnia zbierania kontaktów ręcznie.</p>
+          <a href="/poradniki/<%= audienceGuides.liczby.slug %>">Ile jest instytucji w regionach</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

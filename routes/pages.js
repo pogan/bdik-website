@@ -28,6 +28,7 @@ const geoPages = require('../lib/geoPages');
 const guides = require('../lib/guides');
 const { resolveLastmods } = require('../lib/sitemapLastmod');
 const { displayCase } = require('../lib/textCase');
+const { FIELD_LABELS, EXPORT_FIELDS_FULL, EXPORT_FIELDS_PDF } = require('../lib/fieldLabels');
 
 const router = express.Router();
 
@@ -245,8 +246,29 @@ router.get('/baza', (req, res) => {
     'kontaktowe i wyeksportuj listę do CSV, XLSX lub PDF.';
   const faq = faqView(lastDataUpdate());
   const cennik = cennikView();
+  // Liczby w hero i w nocie pod nim liczone z bazy, nie wpisane ręcznie - posty
+  // kampanii linkują tutaj i liczby muszą się zgadzać z cennikiem i narzędziem.
+  const totalRows = countInstitutions(db);
+  const billableRows = countWithContact(db);
+  const typedRows = db
+    .prepare(`SELECT COUNT(*) AS n FROM institutions WHERE ${institutionTypes.all().map((t) => `(${t.condition})`).join(' OR ')}`)
+    .get().n;
   res.render('baza', {
     cennik,
+    counts: {
+      total: totalRows.toLocaleString('pl-PL'),
+      billable: billableRows.toLocaleString('pl-PL'),
+      untypedPct: totalRows ? Math.round(((totalRows - typedRows) / totalRows) * 100) : 0,
+    },
+    exportColumns: {
+      full: EXPORT_FIELDS_FULL.map((k) => FIELD_LABELS[k]),
+      pdf: EXPORT_FIELDS_PDF.map((k) => FIELD_LABELS[k]),
+    },
+    audienceGuides: {
+      koncert: guides.bySlug('jak-zaproponowac-koncert-domowi-kultury'),
+      warsztaty: guides.bySlug('oferta-warsztatow-dla-domu-kultury'),
+      liczby: guides.bySlug('ile-jest-domow-kultury-w-polsce'),
+    },
     faq,
     institutionTypes: institutionTypes.all(),
     voivodeshipsList: voivodeships.all(),
