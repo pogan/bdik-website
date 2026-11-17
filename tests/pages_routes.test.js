@@ -143,3 +143,20 @@ test('poradniki mają próbkę i formularz zapisu', async () => {
     assert.match(body, /src="\/js\/lead\.js"/, `${g.slug}: brak lead.js`);
   }
 });
+
+test('/ przekierowuje na /baza z zachowaniem utm_*', async () => {
+  const res = await fetch(`${base}/?utm_source=facebook&utm_campaign=bdik_2027_sezon`, { redirect: 'manual' });
+  assert.ok([301, 302].includes(res.status));
+  assert.equal(res.headers.get('location'), '/baza?utm_source=facebook&utm_campaign=bdik_2027_sezon');
+  const plain = await fetch(`${base}/`, { redirect: 'manual' });
+  assert.equal(plain.headers.get('location'), '/baza');
+});
+
+test('formularz próbki komunikuje rabat jako "RABAT DO X zł" z cennika', async () => {
+  const { promoLabel } = require('../lib/promo');
+  const label = promoLabel();
+  for (const p of ['/baza', `/poradniki/${guides.all()[0].slug}`]) {
+    const { body } = await get(p);
+    assert.ok(body.includes(label), `${p}: brak "${label}"`);
+  }
+});
