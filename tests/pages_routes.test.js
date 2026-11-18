@@ -122,6 +122,10 @@ test('/baza: licznik z bazy, CTA, filtry kontaktu, próbka w hero, kolumny ekspo
   assert.equal(status, 200);
   assert.doesNotMatch(body, /2&nbsp;200\+/, 'liczba instytucji ma pochodzić z bazy');
   assert.match(body, /<div class="num">[\d\u00a0 ]*00\+<\/div>/, 'licznik zaokrąglony do setek ze znakiem +');
+  const { countInstitutions } = require('../lib/query');
+  const db = require('../db');
+  const rounded = Math.floor(countInstitutions(db) / 100) * 100;
+  if (rounded >= 1000) assert.match(body, /<div class="num">\d{1,3}(?:[\u00a0\u202f ]\d{3})+\+<\/div>/, 'tysiące oddzielone spacją (2 200+)');
   assert.match(body, /btn-hero-pulse[^>]*>.*Przeglądaj bazę/);
   assert.match(body, /value="both"/);
   assert.doesNotMatch(body, /<option value="website">/, 'filtr WWW ukryty w GUI');

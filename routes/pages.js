@@ -260,7 +260,9 @@ router.get('/baza', (req, res) => {
     counts: {
       total: totalRows.toLocaleString('pl-PL'),
       // Licznik w hero: w dół do pełnej setki, ze znakiem "+" w widoku.
-      totalRounded: (Math.floor(totalRows / 100) * 100).toLocaleString('pl-PL'),
+      // useGrouping 'always': polski format domyślnie nie rozdziela tysięcy
+      // w liczbach czterocyfrowych ("2200"), a licznik ma wyglądać jak "2 200+".
+      totalRounded: (Math.floor(totalRows / 100) * 100).toLocaleString('pl-PL', { useGrouping: 'always' }),
       billable: billableRows.toLocaleString('pl-PL'),
       untypedPct: totalRows ? Math.round(((totalRows - typedRows) / totalRows) * 100) : 0,
     },
