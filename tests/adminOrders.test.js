@@ -49,7 +49,7 @@ test.before(async () => {
 test.after(() => server && server.close());
 
 async function page(query = '') {
-  const res = await fetch(`${base}/admin/orders${query}`, { headers: { cookie }, redirect: 'manual' });
+  const res = await fetch(`${base}/kierownik/orders${query}`, { headers: { cookie }, redirect: 'manual' });
   assert.equal(res.status, 200);
   return res.text();
 }

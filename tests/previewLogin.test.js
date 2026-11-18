@@ -30,7 +30,7 @@ test.before(async () => {
 test.after(() => server && server.close());
 
 test('podgląd: strona logowania pokazuje wejście bez Google', async () => {
-  const body = await (await fetch(`${base}/admin`)).text();
+  const body = await (await fetch(`${base}/kierownik`)).text();
   assert.match(body, /Wejdź do panelu \(wersja testowa\)/);
   assert.doesNotMatch(body, /Zaloguj się przez Google/);
 });
@@ -38,12 +38,12 @@ test('podgląd: strona logowania pokazuje wejście bez Google', async () => {
 test('podgląd: logowanie zawsze się udaje i otwiera panel administratora', async () => {
   const login = await fetch(`${base}/auth/google`, { redirect: 'manual' });
   assert.equal(login.status, 302);
-  assert.equal(login.headers.get('location'), '/admin');
+  assert.equal(login.headers.get('location'), '/kierownik');
   const cookie = login.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
-  const panel = await fetch(`${base}/admin`, { headers: { cookie }, redirect: 'manual' });
+  const panel = await fetch(`${base}/kierownik`, { headers: { cookie }, redirect: 'manual' });
   assert.equal(panel.status, 302);
-  assert.equal(panel.headers.get('location'), '/admin/orders');
-  const orders = await fetch(`${base}/admin/orders`, { headers: { cookie }, redirect: 'manual' });
+  assert.equal(panel.headers.get('location'), '/kierownik/orders');
+  const orders = await fetch(`${base}/kierownik/orders`, { headers: { cookie }, redirect: 'manual' });
   assert.equal(orders.status, 200);
   const user = db.prepare("SELECT role FROM users WHERE email = 'podglad@example.invalid'").get();
   assert.equal(user.role, 'admin');

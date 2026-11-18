@@ -98,8 +98,8 @@ app.use((req, res, next) => {
 });
 
 // Statystyki odwiedzin (vamude-kit, lib/siteStats.js): tylko strony HTML z kodem
-// 200, bez API, panelu, logowania i ruchu admina; boty liczone osobno. Panel
-// szczegółów: /admin/odwiedziny (tylko admin), lejek sprzedażowy: /admin/stats.
+// 200, bez API, panelu, logowania i ruchu admina; boty liczone osobno. Panel:
+// /kierownik/stats (każdy zalogowany administrator).
 app.use(siteStats.middleware);
 app.use(siteStats.panel);
 
@@ -113,6 +113,7 @@ app.get('/robots.txt', (req, res) => {
     [
       'User-agent: *',
       'Allow: /',
+      'Disallow: /kierownik',
       'Disallow: /admin',
       'Disallow: /platnosc',
       'Disallow: /pobierz',
@@ -141,7 +142,10 @@ app.get('/sitemap.xml', (req, res) => {
 });
 
 app.use('/api', apiRoutes);
-app.use('/admin', adminRoutes);
+// Panel administratora: /kierownik (standard Vamude). Stare adresy /admin/...
+// przekierowujemy, żeby zakładki i linki z maili dalej działały.
+app.use('/kierownik', adminRoutes);
+app.use('/admin', (req, res) => res.redirect(301, `/kierownik${req.url === '/' ? '' : req.url}`));
 app.use('/', authRoutes);
 app.use('/', paymentRoutes);
 
