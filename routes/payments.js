@@ -158,7 +158,7 @@ router.post('/api/checkout/quote', express.json(), (req, res) => {
   const bd = priceBreakdown(billedCount);
 
   // Kluczowy punkt lejka: ile osób zobaczyło konkretną kwotę i na niej odpadło.
-  // Kwota w meta pozwala panelowi /admin/stats pokazać rozkład widzianych cen.
+  // Kwota w meta pozwala eksportowi statystyk (lib/stats.js) pokazać rozkład widzianych cen.
   if (!isAdmin(req)) {
     recordEvent(req.ip, 'quote_view', { format, rows: rowCount, billed: billedCount, gross: bd.gross });
   }
@@ -216,7 +216,7 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireConsents, r
       selection,
       rowCount,
       billedCount,
-      // Własne zakupy testowe administratora nie są sprzedażą - /admin/stats
+      // Własne zakupy testowe administratora nie są sprzedażą - lib/stats.js
       // je pomija (spójnie z pomijaniem jego wizyt i zdarzeń).
       createdByAdmin: isAdmin(req),
       amount: net,

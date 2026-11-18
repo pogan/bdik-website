@@ -48,10 +48,16 @@ test('odsłony: człowiek liczony, bot z flagą, stara tabela visits nie rośnie
   cleanup();
 });
 
-test('panel /admin/odwiedziny niedostępny bez logowania administratora', async () => {
-  const res = await fetch(`${base}/admin/odwiedziny`, { redirect: 'manual' });
-  assert.notEqual(res.status, 200);
-  assert.notEqual((await fetch(`${base}/admin/odwiedziny.json`, { redirect: 'manual' })).status, 200);
+test('panel /kierownik/stats niedostępny bez logowania administratora', async () => {
+  const res = await fetch(`${base}/kierownik/stats`, { redirect: 'manual' });
+  assert.equal(res.status, 303);
+  assert.equal(res.headers.get('location'), '/kierownik?next=%2Fkierownik%2Fstats');
+  assert.equal((await fetch(`${base}/kierownik/stats.json`, { redirect: 'manual' })).status, 401);
+  // Pod /admin nic nie ma, a robots.txt nie zdradza adresu panelu.
+  for (const p of ['/admin', '/admin/orders', '/admin/stats']) {
+    assert.equal((await fetch(`${base}${p}`, { redirect: 'manual' })).status, 404, p);
+  }
+  assert.doesNotMatch(await (await fetch(`${base}/robots.txt`)).text(), /kierownik|admin/);
 });
 
 test('archiwum starego licznika i lejek od startu statystyk', () => {
@@ -59,4 +65,25 @@ test('archiwum starego licznika i lejek od startu statystyk', () => {
   assert.equal(typeof a.visitors, 'number');
   assert.ok(Array.isArray(a.sources));
   assert.match(stats.funnelSince(), /^\d{4}-\d{2}-\d{2}$/);
+});
+
+test('eksport starych statystyk do plików (scripts/eksport-starych-statystyk.js)', () => {
+  const { spawnSync } = require('node:child_process');
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'bdik-eksport-'));
+  const r = spawnSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'eksport-starych-statystyk.js'), out], {
+    env: process.env,
+    encoding: 'utf8',
+  });
+  assert.equal(r.status, 0, r.stderr);
+  const csv = fs.readFileSync(path.join(out, 'stary-licznik.csv'), 'utf8');
+  assert.match(csv, /^first_seen,last_seen,landing_path,referrer,utm_source,utm_medium,utm_campaign\n/);
+  assert.doesNotMatch(csv, /ip_hash/);
+  const summary = JSON.parse(fs.readFileSync(path.join(out, 'podsumowanie.json'), 'utf8'));
+  assert.ok(Array.isArray(summary.lejek) && summary.lejek.length > 0);
+  assert.equal(typeof summary.archiwumStaregoLicznika.visitors, 'number');
+  assert.ok(fs.existsSync(path.join(out, 'zdarzenia.csv')));
+  fs.rmSync(out, { recursive: true, force: true });
 });

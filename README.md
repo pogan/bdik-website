@@ -94,7 +94,7 @@ rather than open registration. Admin authorization (`lib/projection.js`,
 enforced again in `routes/admin.js`) is a double gate: a `role = 'admin'` row
 in the database, OR an email present in the `ADMIN_EMAILS` env var — the
 latter exists as a safety net so the operator retains admin access even if a
-database row's role gets misconfigured. `/admin/orders` and the admin file
+database row's role gets misconfigured. `/kierownik/orders` and the admin file
 route are hard-gated behind this check for every request, not just the initial
 page load.
 
@@ -205,7 +205,7 @@ scripts/add_user.js      add an email to the login allowlist
   entirely by the `users` allowlist; export purchases are gated by Stripe.
 - No confirmation email with a re-issuable download link at present — the
   download link lives on the Stripe return page (`/platnosc`); the admin
-  backup path (`/admin/orders/:id/plik`) exists specifically as the fallback
+  backup path (`/kierownik/orders/:id/plik`) exists specifically as the fallback
   when a customer needs their file re-delivered.
 - Institution "type" as a first-class filter isn't implemented yet — the
   underlying PKD classification data is already present in the schema and
