@@ -19,6 +19,7 @@ const { ensureBackup, saveBackupSafe } = require('../lib/backup');
 const { sendConfirmationSafe } = require('../lib/mailer');
 const { TERMS_VERSION } = require('../lib/legal');
 const { recordEvent } = require('../lib/visits');
+const { sourceFor } = require('../lib/attribution');
 const { isAdmin } = require('../lib/projection');
 
 const router = express.Router();
@@ -223,6 +224,9 @@ router.post('/api/checkout', checkoutLimiter, express.json(), requireConsents, r
       // Wersja regulaminu zaakceptowana przy tym zakupie (zgody potwierdzone
       // przez requireConsents; momenty zapisuje createOrder).
       termsVersion: TERMS_VERSION,
+      // Skąd przyszedł kupujący (kampania z UTM albo strona odsyłająca) -
+      // dopasowanie do statystyk odwiedzin, bez ciasteczek (lib/attribution.js).
+      source: sourceFor(req),
     });
 
     // Stawkę VAT rozliczamy jako osobny TaxRate: pozycja jest netto, a Stripe
