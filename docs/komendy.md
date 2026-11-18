@@ -85,7 +85,7 @@ node scripts/add_user.js <email> [rola]
 ```
 
 Dodaje adres do allowlisty logowania Google (tabela `users`) albo aktywuje
-istniejący. `rola` domyślnie `viewer`; `admin` daje dostęp do `/admin/*`.
+istniejący. `rola` domyślnie `viewer`; `admin` daje dostęp do `/kierownik/*`.
 Konto istnieje wyłącznie w bazie — nie ma samodzielnej rejestracji.
 
 ### `scripts/optout_institution.js` — usunięcie instytucji (RODO)
@@ -261,7 +261,7 @@ Wzorzec: `.env.example`. Grupy:
 
 | Zmienna | Domyślnie | Opis |
 |---|---|---|
-| `ADMIN_EMAILS` | — | Adresy z uprawnieniami admina (`/admin/*`), po przecinku. Działa też konto z rolą `admin` w bazie. |
+| `ADMIN_EMAILS` | — | Adresy z uprawnieniami admina (`/kierownik/*`), po przecinku. Działa też konto z rolą `admin` w bazie. |
 | `EXPORT_BACKUP_DIR` | `./data/exports` | Katalog na kopie zapasowe wygenerowanych plików eksportu (poza `public/`). |
 
 ### Ustawiane wewnętrznie (nie w `.env`)
@@ -331,10 +331,10 @@ lsof -ti :3457 | xargs kill
 |---|---|
 | `GET /healthz` | Health check → `{"status":"ok"}`. |
 | `GET /robots.txt`, `GET /sitemap.xml` | Budowane z listy `PUBLIC_PAGES` (`routes/pages.js`). |
-| `GET /admin` | Panel logowania administratora (poza Google OAuth). |
-| `GET /admin/orders` | Lista zamówień (wymaga admina). |
-| `GET /admin/stats` | Statystyki lejka sprzedażowego. |
-| `GET /admin/orders/:id/plik` | Ponowne pobranie pliku zamówienia (fallback, gdy klient potrzebuje re-dostawy). |
+| `GET /kierownik` | Logowanie administratora (Google OAuth). Stare `/admin/*` → 301 na `/kierownik/*`. |
+| `GET /kierownik/orders` | Lista zamówień (wymaga admina). |
+| `GET /kierownik/stats` | Statystyki odwiedzin (vamude-kit), każdy zalogowany admin. |
+| `GET /kierownik/orders/:id/plik` | Ponowne pobranie pliku zamówienia (fallback, gdy klient potrzebuje re-dostawy). |
 | `POST /api/checkout/quote` | Wycena (liczba rekordów z bazy, cena z `lib/pricing.js`). |
 | `GET /platnosc?session_id=...` | Strona powrotu po płatności (poll + re-sync ze Stripe). |
 | `GET /pobierz/:id` | Bramka pobierania pliku (kryteria z zamówienia, link 7 dni / limit pobrań). |
@@ -354,3 +354,13 @@ node scripts/build_sample_export.js   # jeśli ETL zmienił dane albo zmieniły 
 pm2 restart bdik-website
 pm2 logs bdik-website --lines 50
 ```
+
+## Eksport starych statystyk
+
+Widok `/admin/stats` (lejek, wyceny, archiwum starego licznika `visits`) usunięty 2026-11-18. Zawartość do wglądu:
+
+```bash
+node scripts/eksport-starych-statystyk.js            # → data/archiwum/statystyki-RRRR-MM-DD/
+```
+
+Pliki: `stary-licznik.csv` (tabela `visits` bez skrótu IP), `zdarzenia.csv`, `podsumowanie.json`. Tylko odczyt bazy.

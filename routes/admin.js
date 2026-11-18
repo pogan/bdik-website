@@ -1,7 +1,6 @@
 const express = require('express');
 const { describeSource, sourceKey } = require('../lib/attribution');
 const orders = require('../lib/orders');
-const stats = require('../lib/stats');
 const { isAdmin } = require('../lib/projection');
 const { formatAmount, breakdownFromNet, describeFilters, FORMAT_LABELS } = require('../lib/pricing');
 const { ensureBackup } = require('../lib/backup');
@@ -13,7 +12,7 @@ const router = express.Router();
 // (na stronie głównej nie ma przycisku logowania). Zalogowanego admina od razu
 // przenosimy do panelu; zalogowanego bez uprawnień informujemy o braku dostępu.
 router.get('/', (req, res) => {
-  if (isAdmin(req)) return res.redirect('/admin/orders');
+  if (isAdmin(req)) return res.redirect('/kierownik/orders');
   if (req.user) {
     return res.status(403).render('admin-forbidden', { user: req.user });
   }
@@ -63,7 +62,7 @@ function adminRow(order) {
     source: describeSource(order),
     // Link do backupu (dla admina) - zawsze dla opłaconego, także po wygaśnięciu
     // linku klienta. Publiczny link do klienta pokazujemy tylko, gdy wciąż aktywny.
-    backupUrl: order.status === 'paid' ? `/admin/orders/${downloadId}/plik` : null,
+    backupUrl: order.status === 'paid' ? `/kierownik/orders/${downloadId}/plik` : null,
     publicUrl: state.ok ? `${baseUrl()}/pobierz/${downloadId}` : null,
     publicActive: state.ok,
   };
@@ -113,20 +112,6 @@ router.get('/orders', (req, res) => {
     statusFilters,
     ttlHours: orders.DOWNLOAD_TTL_HOURS,
     maxDownloads: orders.MAX_DOWNLOADS,
-  });
-});
-
-// Statystyki lejka sprzedażowego: kroki od wizyty do opłaconego zamówienia,
-// rozkład widzianych wycen, źródła ruchu i przebieg dzienny (lib/stats.js).
-router.get('/stats', (req, res) => {
-  res.render('admin-stats', {
-    user: req.user || null,
-    funnel: stats.funnel(),
-    funnelSince: stats.funnelSince(),
-    quoteBuckets: stats.quoteBuckets(),
-    archive: stats.archive(),
-    daily: stats.daily(),
-    revenue: stats.revenue(),
   });
 });
 

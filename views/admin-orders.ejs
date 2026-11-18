@@ -17,11 +17,11 @@
     </div>
 
     <nav id="status-filter" class="d-flex flex-wrap gap-2 mb-3" aria-label="Filtr statusu zamówienia">
-      <a href="/admin/orders" data-status="" class="btn btn-sm <%= status ? 'btn-outline-secondary' : 'btn-secondary' %>"<%- status ? '' : ' aria-current="page"' %>>
+      <a href="/kierownik/orders" data-status="" class="btn btn-sm <%= status ? 'btn-outline-secondary' : 'btn-secondary' %>"<%- status ? '' : ' aria-current="page"' %>>
         wszystkie <span class="badge text-bg-light ms-1"><%= totalCount %></span>
       </a>
       <% statusFilters.forEach((f) => { %>
-        <a href="/admin/orders?status=<%= f.value %>" data-status="<%= f.value %>" class="btn btn-sm <%= status === f.value ? 'btn-secondary' : 'btn-outline-secondary' %>"<%- status === f.value ? ' aria-current="page"' : '' %>>
+        <a href="/kierownik/orders?status=<%= f.value %>" data-status="<%= f.value %>" class="btn btn-sm <%= status === f.value ? 'btn-secondary' : 'btn-outline-secondary' %>"<%- status === f.value ? ' aria-current="page"' : '' %>>
           <%= f.label %> <span class="badge text-bg-light ms-1"><%= f.count %></span>
         </a>
       <% }); %>
