@@ -113,8 +113,6 @@ app.get('/robots.txt', (req, res) => {
     [
       'User-agent: *',
       'Allow: /',
-      'Disallow: /kierownik',
-      'Disallow: /admin',
       'Disallow: /platnosc',
       'Disallow: /pobierz',
       'Disallow: /api',
@@ -142,10 +140,10 @@ app.get('/sitemap.xml', (req, res) => {
 });
 
 app.use('/api', apiRoutes);
-// Panel administratora: /kierownik (standard Vamude). Stare adresy /admin/...
-// przekierowujemy, żeby zakładki i linki z maili dalej działały.
+// Panel administratora: /kierownik (standard Vamude). Pod /admin celowo nic nie ma
+// (404), a robots.txt nie wymienia panelu: nie podpowiadamy skanerom adresu.
+// Strony panelu mają meta noindex.
 app.use('/kierownik', adminRoutes);
-app.use('/admin', (req, res) => res.redirect(301, `/kierownik${req.url === '/' ? '' : req.url}`));
 app.use('/', authRoutes);
 app.use('/', paymentRoutes);
 

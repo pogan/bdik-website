@@ -53,10 +53,11 @@ test('panel /kierownik/stats niedostępny bez logowania administratora', async (
   assert.equal(res.status, 303);
   assert.equal(res.headers.get('location'), '/kierownik?next=%2Fkierownik%2Fstats');
   assert.equal((await fetch(`${base}/kierownik/stats.json`, { redirect: 'manual' })).status, 401);
-  // Stare adresy panelu prowadzą do /kierownik.
-  const old = await fetch(`${base}/admin/stats`, { redirect: 'manual' });
-  assert.equal(old.status, 301);
-  assert.equal(old.headers.get('location'), '/kierownik/stats');
+  // Pod /admin nic nie ma, a robots.txt nie zdradza adresu panelu.
+  for (const p of ['/admin', '/admin/orders', '/admin/stats']) {
+    assert.equal((await fetch(`${base}${p}`, { redirect: 'manual' })).status, 404, p);
+  }
+  assert.doesNotMatch(await (await fetch(`${base}/robots.txt`)).text(), /kierownik|admin/);
 });
 
 test('archiwum starego licznika i lejek od startu statystyk', () => {
