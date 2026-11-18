@@ -29,6 +29,13 @@
           <%- include(guide.view) %>
 
           <hr class="my-4">
+          <div class="guide-sample mb-4">
+            <div class="fw-semibold mb-1">Zobacz, jak wygląda lista kontaktów</div>
+            <p class="small mb-2">Darmowa próbka: 16 prawdziwych instytucji kultury, po jednej z każdego województwa,
+              z telefonem, e-mailem i adresem.</p>
+            <a class="btn btn-success btn-sm" href="/pliki/przykladowa-lista-instytucji-kultury.pdf" download>Pobierz przykład (PDF)</a>
+            <%- include('partials/lead-form', { leadIntro: 'Albo zostaw e-mail: wyślemy próbkę i kod rabatowy na pierwszy eksport:' }) %>
+          </div>
           <p class="mb-0">
             <a href="/baza" class="btn btn-primary btn-sm">Przeglądaj bazę instytucji kultury</a>
             <a href="/poradniki" class="btn btn-outline-secondary btn-sm ms-1">Więcej poradników</a>
@@ -41,6 +48,7 @@
   <%- include('partials/footer') %>
 
   <script src="/vendor/bootstrap/bootstrap.bundle.min.js"></script>
+  <script src="/js/lead.js"></script>
   <script src="/js/cookies.js"></script>
 </body>
 </html>

@@ -27,6 +27,21 @@
       <% }); %>
     </nav>
 
+    <% if (sourceSummary.length) { %>
+      <details class="mb-3 small">
+        <summary class="fw-semibold">Opłacone zamówienia według źródła (<%= sourceSummary.length %>)</summary>
+        <table class="table table-sm mt-2 mb-1 bg-white border" style="max-width:640px">
+          <thead><tr><th>Kampania / źródło</th><th class="text-end">Zamówień</th><th class="text-end">Brutto przed rabatem</th></tr></thead>
+          <tbody>
+            <% sourceSummary.forEach((s) => { %>
+              <tr><td><%= s.source %></td><td class="text-end"><%= s.count %></td><td class="text-end"><%= s.grossLabel %></td></tr>
+            <% }) %>
+          </tbody>
+        </table>
+        <div class="text-secondary">Źródło = ostatnie wejście z kampanii (UTM) albo z innej strony w ciągu 30 dni przed zamówieniem, dopasowane do statystyk odwiedzin bez ciasteczek. Zmiana sieci lub przeglądarki = „(bez źródła)”.</div>
+      </details>
+    <% } %>
+
     <% if (!orders.length) { %>
       <div class="card"><div class="card-body text-center text-secondary py-5">Brak zamówień.</div></div>
     <% } else { %>
@@ -41,6 +56,7 @@
               <th>Zakres</th>
               <th class="text-end">Kwota brutto</th>
               <th>E-mail / dane do faktury</th>
+              <th>Źródło</th>
               <th class="text-end">Pobrań</th>
               <th class="text-end">Plik</th>
             </tr>
@@ -89,6 +105,7 @@
                     <div class="text-secondary" style="font-size:.75rem"><%= o.billingAddress %></div>
                   <% } %>
                 </td>
+                <td><% if (o.source) { %><%= o.source %><% } else { %><span class="text-secondary">—</span><% } %></td>
                 <td class="text-end"><%= o.downloadCount %></td>
                 <td class="text-end text-nowrap">
                   <% if (o.backupUrl) { %>

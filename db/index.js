@@ -42,6 +42,13 @@ ensureColumn('orders', 'billed_count', 'INTEGER');
 // Zamówienia składane przez zalogowanego administratora (testy własne) - do
 // pominięcia w statystykach sprzedaży (lib/stats.js).
 ensureColumn('orders', 'created_by_admin', 'INTEGER NOT NULL DEFAULT 0');
+// Źródło zamówienia (lib/attribution.js): ostatnie wejście z kampanii albo
+// z innej strony, dopasowane do statystyk vamude-kit bez ciasteczek.
+ensureColumn('orders', 'source_utm_source', 'TEXT');
+ensureColumn('orders', 'source_utm_medium', 'TEXT');
+ensureColumn('orders', 'source_utm_campaign', 'TEXT');
+ensureColumn('orders', 'source_referrer', 'TEXT');
+ensureColumn('orders', 'source_seen_at', 'TEXT');
 
 // Źródło pierwszej wizyty (referrer/UTM/strona wejścia) - patrz lib/visits.js.
 ensureColumn('visits', 'referrer', 'TEXT');

@@ -6,6 +6,7 @@ const express = require('express');
 
 const db = require('../db');
 const guides = require('../lib/guides');
+const { promoLabel } = require('../lib/promo');
 const voivodeships = require('../lib/voivodeships');
 const institutionTypes = require('../lib/institutionTypes');
 const geoPages = require('../lib/geoPages');
@@ -108,6 +109,7 @@ router.get('/poradniki/:slug', (req, res) => {
 
   res.render('guide', {
     user: req.user || null,
+    promoLabel: promoLabel(),
     guide,
     stats: guide.dynamic ? institutionStats() : null,
     // Strony miast (lib/geoPages.js) do linków w treści poradników - lista z

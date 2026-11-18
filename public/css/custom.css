@@ -171,6 +171,17 @@ a:hover { color: var(--accent-strong); }
   box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .5);
 }
 .btn-hero:hover { background: #f1f3fb; color: var(--ink); transform: translateY(-1px); }
+
+/* Główne CTA w hero lekko pulsuje (skala + poświata), żeby przyciągnąć wzrok
+   z wejść z social mediów. Na hover animacja staje; bez ruchu dla osób, które
+   go wyłączyły w systemie. */
+.btn-hero-pulse { animation: hero-pulse 2.4s ease-in-out infinite; }
+.btn-hero-pulse:hover, .btn-hero-pulse:focus-visible { animation: none; }
+@keyframes hero-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .5), 0 0 0 0 rgba(169, 155, 255, 0); }
+  50% { transform: scale(1.04); box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .5), 0 0 22px 4px rgba(169, 155, 255, .45); }
+}
+@media (prefers-reduced-motion: reduce) { .btn-hero-pulse { animation: none; } }
 .btn-hero-ghost {
   background: rgba(255, 255, 255, .06); color: #e8ecf6;
   border: 1px solid rgba(255, 255, 255, .2); padding: .7rem 1.25rem; font-weight: 600;
@@ -426,3 +437,28 @@ hr { border-color: var(--line); opacity: 1; }
 .segment-list-group { break-inside: avoid; }
 .segment-contact i { margin-left: .3rem; font-size: .85em; }
 .segment-cta { background: var(--surface); border-color: var(--line) !important; }
+
+/* Nota pod liczbami w hero - wyjaśnia, skąd różnice między sumą typów,
+   liczbą wszystkich rekordów i rekordów płatnych. */
+.hero-note { font-size: .82rem; color: #9aa5c6; max-width: 70ch; line-height: 1.5; margin: 1rem 0 0; }
+
+/* Lista kolumn eksportu pod próbką. */
+.sample-columns { font-size: .82rem; color: var(--ink-soft); }
+.sample-columns summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+
+/* Sekcja „Dla kogo” ------------------------------------------------------- */
+.audience { padding: 2.25rem 0; border-bottom: 1px solid var(--line); }
+.audience-title { font-size: 1.4rem; font-weight: 700; letter-spacing: -.02em; color: var(--ink); margin-bottom: 1rem; }
+.audience-card {
+  height: 100%; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 1.1rem 1.25rem;
+}
+.audience-card i { font-size: 1.4rem; color: var(--accent-ink); }
+.audience-card h3 { font-size: 1rem; font-weight: 650; color: var(--ink); margin: .5rem 0 .35rem; }
+.audience-card p { font-size: .86rem; color: var(--muted); line-height: 1.45; margin-bottom: .6rem; }
+.audience-card a { font-size: .86rem; font-weight: 600; }
+
+/* Próbka i zapis na końcu poradnika. */
+.guide-sample {
+  background: var(--success-soft); border-radius: var(--radius); padding: 1rem 1.25rem;
+}
