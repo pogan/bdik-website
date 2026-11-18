@@ -1,4 +1,5 @@
 const express = require('express');
+const { describeSource, sourceKey } = require('../lib/attribution');
 const orders = require('../lib/orders');
 const stats = require('../lib/stats');
 const { isAdmin } = require('../lib/projection');
@@ -59,6 +60,7 @@ function adminRow(order) {
     createdAt: order.created_at,
     paidAt: order.paid_at,
     downloadCount: order.download_count,
+    source: describeSource(order),
     // Link do backupu (dla admina) - zawsze dla opłaconego, także po wygaśnięciu
     // linku klienta. Publiczny link do klienta pokazujemy tylko, gdy wciąż aktywny.
     backupUrl: order.status === 'paid' ? `/admin/orders/${downloadId}/plik` : null,
@@ -87,8 +89,24 @@ router.get('/orders', (req, res) => {
     ...f,
     count: all.filter((o) => o.status === f.value).length,
   }));
+  // Opłacone zamówienia według źródła (kampania / strona odsyłająca), bez
+  // zakupów testowych administratora. Kwoty brutto sprzed rabatu - kwotę po
+  // kodzie rabatowym widać w Stripe.
+  const bySource = new Map();
+  for (const o of all) {
+    if (o.status !== 'paid' || o.created_by_admin) continue;
+    const key = sourceKey(o);
+    const agg = bySource.get(key) || { source: key, count: 0, gross: 0 };
+    agg.count += 1;
+    agg.gross += breakdownFromNet(o.amount).gross;
+    bySource.set(key, agg);
+  }
+  const sourceSummary = [...bySource.values()]
+    .sort((a, b) => b.gross - a.gross)
+    .map((s) => ({ ...s, grossLabel: formatAmount(s.gross) }));
   res.render('admin-orders', {
     user: req.user || null,
+    sourceSummary,
     orders: rows,
     totalCount: all.length,
     status,

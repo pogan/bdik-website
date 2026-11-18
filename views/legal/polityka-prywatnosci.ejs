@@ -83,6 +83,11 @@
     (np. zmiana filtra, pobranie próbki, otwarcie okna eksportu, obejrzenie wyceny wraz z jej
     kwotą, rozpoczęcie płatności) powiązane ze skrótem SHA-256 adresu IP, żeby policzyć, ile osób
     dochodzi do kolejnych kroków.</li>
+  <li><strong>Źródło zamówienia:</strong> gdy składasz zamówienie, zapisujemy przy nim parametry
+    kampanii (<code>utm_*</code>) albo adres strony, z której nastąpiło ostatnie przejście do Serwisu
+    w ciągu 30 dni przed zamówieniem. Ustalamy je na podstawie opisanego wyżej identyfikatora,
+    żeby wiedzieć, które kampanie prowadzą do zakupów. Sam identyfikator nie jest zapisywany
+    w zamówieniu.</li>
   <li><strong>Wcześniejszy licznik:</strong> do listopada 2026 r. odwiedziny liczył licznik
     zapisujący skrót SHA-256 adresu IP wraz ze źródłem i stroną pierwszej wizyty. Te dane
     zachowujemy w celach archiwalnych na zasadach opisanych w tej sekcji; nic już do nich nie
