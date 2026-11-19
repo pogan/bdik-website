@@ -462,3 +462,18 @@ hr { border-color: var(--line); opacity: 1; }
 .guide-sample {
   background: var(--success-soft); border-radius: var(--radius); padding: 1rem 1.25rem;
 }
+
+/* Opinie klientów --------------------------------------------------------- */
+.testimonials { padding: 2.25rem 0; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.testimonials-title { font-size: 1.4rem; font-weight: 700; letter-spacing: -.02em; color: var(--ink); margin-bottom: 1rem; }
+.testimonial-card {
+  height: 100%; margin: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 1rem;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem 1.25rem;
+}
+.testimonial-card blockquote { margin: 0; }
+.testimonial-card blockquote p { margin: 0; color: var(--ink-soft); font-size: .92rem; line-height: 1.55; }
+.testimonial-card blockquote p::before { content: "„"; }
+.testimonial-card blockquote p::after { content: "”"; }
+.testimonial-card figcaption { display: flex; align-items: center; gap: .75rem; font-size: .82rem; color: var(--muted); line-height: 1.35; }
+.testimonial-card figcaption img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex: none; }
+.testimonial-card figcaption strong { color: var(--ink); font-weight: 650; }

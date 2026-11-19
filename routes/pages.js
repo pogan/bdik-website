@@ -29,6 +29,7 @@ const guides = require('../lib/guides');
 const { resolveLastmods } = require('../lib/sitemapLastmod');
 const { displayCase } = require('../lib/textCase');
 const { promoLabel } = require('../lib/promo');
+const testimonials = require('../lib/testimonials');
 const { FIELD_LABELS, EXPORT_FIELDS_FULL, EXPORT_FIELDS_PDF } = require('../lib/fieldLabels');
 
 const router = express.Router();
@@ -257,6 +258,7 @@ router.get('/baza', (req, res) => {
   res.render('baza', {
     cennik,
     promoLabel: promoLabel(),
+    testimonials: testimonials.all(),
     counts: {
       total: totalRows.toLocaleString('pl-PL'),
       // Licznik w hero: w dół do pełnej setki, ze znakiem "+" w widoku.

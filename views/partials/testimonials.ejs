@@ -1,0 +1,22 @@
+<%# Opinie klientów (lib/testimonials.js). Bez danych strukturalnych Review:
+    Google nie pokazuje własnych opinii firmy o sobie i traktuje je jako nadużycie. %>
+<section class="testimonials" id="opinie">
+  <div class="container">
+    <h2 class="testimonials-title">Co mówią osoby, które korzystają z bazy</h2>
+    <div class="row g-3">
+      <% testimonials.forEach((t) => { %>
+        <div class="col-12 col-md-4">
+          <figure class="testimonial-card">
+            <blockquote><p><%= t.quote %></p></blockquote>
+            <figcaption>
+              <img src="/images/opinie/<%= t.slug %>-160.webp"
+                   srcset="/images/opinie/<%= t.slug %>-160.webp 160w, /images/opinie/<%= t.slug %>-320.webp 320w"
+                   sizes="56px" width="56" height="56" alt="<%= t.name %>" loading="lazy" decoding="async">
+              <span><strong><%= t.name %></strong><br><%= t.role %></span>
+            </figcaption>
+          </figure>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</section>

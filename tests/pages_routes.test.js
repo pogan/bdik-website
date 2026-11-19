@@ -164,3 +164,18 @@ test('formularz próbki komunikuje rabat jako "RABAT DO X zł" z cennika', async
     assert.ok(body.includes(label), `${p}: brak "${label}"`);
   }
 });
+
+test('/baza: sekcja opinii z istniejącymi zdjęciami', async () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const testimonials = require('../lib/testimonials').all();
+  const { body } = await get('/baza');
+  assert.match(body, /id="opinie"/);
+  for (const t of testimonials) {
+    assert.ok(body.includes(t.name), `brak opinii: ${t.name}`);
+    for (const size of [160, 320]) {
+      assert.ok(fs.existsSync(path.join(__dirname, '..', 'public', 'images', 'opinie', `${t.slug}-${size}.webp`)), `brak zdjęcia ${t.slug}-${size}`);
+    }
+  }
+  assert.doesNotMatch(body, /"@type":"Review"/, 'bez danych strukturalnych Review');
+});
