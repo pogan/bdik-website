@@ -193,3 +193,11 @@ test('/baza i /o-nas: sekcja „Kto stoi za BDIK” ze zdjęciem', async () => {
   assert.match(onas.body, /id="autor"/);
   assert.match(onas.body, /"@type":"Person"/);
 });
+
+test('/baza: bez obietnicy bibliotek, z zakresem instytucji na województwo', async () => {
+  const { body } = await get('/baza');
+  assert.doesNotMatch(body, /domów kultury, bibliotek i centrów kultury/);
+  assert.match(body, /domów, ośrodków i centrów kultury/);
+  assert.match(body, /W każdym województwie od \d+ do \d+ instytucji/);
+  assert.match(body, /Dlaczego w BDIK jest tak dużo instytucji\?/);
+});

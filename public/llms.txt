@@ -1,18 +1,18 @@
 # Baza Danych Instytucji Kultury (BDIK)
 
-> Baza kontaktowa 2 200+ polskich instytucji kultury (domy kultury, centra kultury,
-> ośrodki kultury, biblioteki publiczne) z 16 województw. Dane pochodzą z publicznych
+> Baza kontaktowa 2 200+ polskich samorządowych instytucji kultury (domy, ośrodki
+> i centra kultury) z 16 województw. Dane pochodzą z publicznych
 > rejestrów (KRS, REGON/GUS) i ręcznej weryfikacji. Serwis pozwala bezpłatnie
 > przeglądać i filtrować bazę, a jednorazowo kupić eksport (CSV/XLSX/PDF) z pełnymi
 > danymi kontaktowymi (telefon, e-mail, WWW, REGON).
 
 Odbiorcy: artyści, zespoły muzyczne i teatralne, animatorzy kultury oraz organizatorzy
-koncertów, wystaw i warsztatów, którzy szukają kontaktu do domów kultury i bibliotek
+koncertów, wystaw i warsztatów, którzy szukają kontaktu do domów i ośrodków kultury
 w Polsce w celu zaproponowania współpracy.
 
 ## Zakres danych
 
-- Ponad 2 200 instytucji: domy kultury, centra kultury, ośrodki kultury, biblioteki publiczne.
+- Ponad 2 200 instytucji: domy kultury, centra kultury, ośrodki kultury (część połączona z biblioteką).
 - Wszystkie 16 województw Polski.
 - Pola: nazwa, pełny adres (województwo/powiat/gmina/miejscowość/ulica/kod pocztowy),
   telefon, e-mail, strona WWW, REGON (eksport płatny dodaje NIP, formę prawną, kod PKD).
