@@ -133,6 +133,14 @@ function sampleInstitutions(filters, limit = 20) {
 // Sekcja #cennik na stronie bazy renderuje się z tych samych stałych, którymi
 // serwer faktycznie wycenia eksport (lib/pricing.js) - cennik nie może się
 // rozjechać z pobieraną kwotą. Przykłady liczone priceBreakdown, kwoty brutto.
+// Najmniej i najwięcej instytucji w jednym województwie - argument "pełne
+// pokrycie regionu" w hero i w FAQ, liczony z bazy, żeby się nie zestarzał.
+function voivodeshipRange() {
+  const rows = db.prepare('SELECT COUNT(*) AS n FROM institutions GROUP BY voivodeship').all();
+  const counts = rows.map((r) => r.n);
+  return { voiMin: counts.length ? Math.min(...counts) : 0, voiMax: counts.length ? Math.max(...counts) : 0 };
+}
+
 function cennikView() {
   const example = (label, note, rows) => {
     const bd = priceBreakdown(rows);
@@ -229,21 +237,32 @@ function faqView(dataUpdatedAt) {
         'przepisów - zakres działania (zajęcia, wystawy, koncerty, warsztaty) bywa bardzo podobny.',
     },
     {
-      q: 'Ile domów kultury, bibliotek i centrów kultury działa w Polsce?',
+      q: 'Ile domów, ośrodków i centrów kultury jest w bazie?',
       a:
-        `W samej tej bazie jest ${countInstitutions(db, { filters: { type: 'domy-kultury' } })} domów kultury, ` +
-        `${countInstitutions(db, { filters: { type: 'centra-kultury' } })} centrów kultury, ` +
-        `${countInstitutions(db, { filters: { type: 'osrodki-kultury' } })} ośrodków kultury i ` +
-        `${countInstitutions(db, { filters: { type: 'biblioteki' } })} bibliotek - w sumie ` +
-        `${countInstitutions(db)} instytucji kultury z 16 województw. Dokładny rozkład wg regionu i ` +
-        'typu zobaczysz na stronie /poradniki/ile-jest-domow-kultury-w-polsce.',
-    }
+        `W bazie jest ${countInstitutions(db, { filters: { type: 'osrodki-kultury' } })} ośrodków kultury, ` +
+        `${countInstitutions(db, { filters: { type: 'centra-kultury' } })} centrów kultury i ` +
+        `${countInstitutions(db, { filters: { type: 'domy-kultury' } })} domów kultury - w sumie ` +
+        `${countInstitutions(db)} samorządowych instytucji kultury z 16 województw. Część z nich prowadzi ` +
+        'też bibliotekę albo zajęcia sportowe. Dokładny rozkład wg regionu i typu zobaczysz na stronie ' +
+        '/poradniki/ile-jest-domow-kultury-w-polsce.',
+    },
+    (() => {
+      const { voiMin, voiMax } = voivodeshipRange();
+      return {
+        q: 'Dlaczego w BDIK jest tak dużo instytucji?',
+        a:
+          'Bierzemy wszystkie samorządowe instytucje kultury z rejestru REGON, a nie tylko gminne domy ' +
+          'kultury: także ośrodki i centra miejskie, powiatowe i wojewódzkie oraz placówki łączone z ' +
+          `biblioteką albo sportem. Dlatego w każdym województwie jest ich od ${voiMin} do ${voiMax}, ` +
+          'a w filtrach dojdziesz do pojedynczej gminy.',
+      };
+    })()
   ];
 }
 
 router.get('/baza', (req, res) => {
   const description =
-    'Baza ponad 2 200 domów kultury, bibliotek i centrów kultury w Polsce. ' +
+    'Baza ponad 2 200 domów, ośrodków i centrów kultury w Polsce. ' +
     'Filtruj po województwie, powiecie, gminie i miejscowości, sprawdź dane ' +
     'kontaktowe i wyeksportuj listę do CSV, XLSX lub PDF.';
   const faq = faqView(lastDataUpdate());
@@ -267,6 +286,7 @@ router.get('/baza', (req, res) => {
       totalRounded: (Math.floor(totalRows / 100) * 100).toLocaleString('pl-PL', { useGrouping: 'always' }),
       billable: billableRows.toLocaleString('pl-PL'),
       untypedPct: totalRows ? Math.round(((totalRows - typedRows) / totalRows) * 100) : 0,
+      ...voivodeshipRange(),
     },
     exportColumns: {
       full: EXPORT_FIELDS_FULL.map((k) => FIELD_LABELS[k]),
@@ -288,7 +308,7 @@ router.get('/baza', (req, res) => {
     // taka jak dotąd.
     adminView: isAdmin(req) ? adminViewSpec() : null,
     dataUpdatedAt: lastDataUpdate(),
-    title: 'Baza Danych Instytucji Kultury — kontakty do domów kultury i bibliotek',
+    title: 'Baza Danych Instytucji Kultury — kontakty do domów, ośrodków i centrów kultury',
     description,
     robots: 'index, follow',
     canonicalUrl: canonicalUrl('/baza'),
@@ -311,7 +331,7 @@ router.get('/baza', (req, res) => {
           url: baseUrl(),
         },
         publisher: { '@type': 'Organization', name: seller.name, url: baseUrl() },
-        keywords: ['domy kultury', 'biblioteki', 'centra kultury', 'instytucje kultury', 'kontakty'],
+        keywords: ['domy kultury', 'ośrodki kultury', 'centra kultury', 'instytucje kultury', 'kontakty'],
         spatialCoverage: { '@type': 'Place', name: 'Polska' },
         temporalCoverage: `2026-01-01/${dataLastmod()}`,
         variableMeasured: [
@@ -509,12 +529,12 @@ router.get('/baza/wojewodztwo/:slug', (req, res) => {
 
   renderSegment(req, res, {
     filters,
-    title: `Domy kultury, biblioteki i centra kultury w województwie ${voi.locative} — baza kontaktów`,
+    title: `Domy, ośrodki i centra kultury w województwie ${voi.locative} — baza kontaktów`,
     description:
-      `${total} instytucji kultury w województwie ${voi.locative}: domy kultury, biblioteki, ` +
-      'centra i ośrodki kultury. Sprawdź dane kontaktowe i pobierz listę do CSV, XLSX lub PDF.',
+      `${total} instytucji kultury w województwie ${voi.locative}: domy, ośrodki i centra kultury. ` +
+      'Sprawdź dane kontaktowe i pobierz listę do CSV, XLSX lub PDF.',
     canonicalPath: `/baza/wojewodztwo/${voi.slug}`,
-    h1: `Domy kultury, biblioteki i centra kultury w województwie ${voi.locative}`,
+    h1: `Domy, ośrodki i centra kultury w województwie ${voi.locative}`,
     leadHtml: `W województwie ${voi.locative} baza obejmuje <strong>${total}</strong> instytucji kultury.`,
     breadcrumb: [
       { name: 'Baza Danych Instytucji Kultury', url: canonicalUrl('/baza') },
@@ -590,12 +610,12 @@ router.get('/baza/wojewodztwo/:woj/miasto/:miasto', (req, res) => {
 
   renderSegment(req, res, {
     filters,
-    title: `Domy kultury i biblioteki — ${city.label} (${total}) | baza kontaktów`,
+    title: `Domy i ośrodki kultury — ${city.label} (${total}) | baza kontaktów`,
     description:
       `${total} instytucji kultury w miejscowości ${city.label} (województwo ${voi.label.toLowerCase()}): ` +
-      'domy kultury, biblioteki, ośrodki i centra kultury z adresami. Pobierz listę z kontaktami do CSV, XLSX lub PDF.',
+      'domy, ośrodki i centra kultury z adresami. Pobierz listę z kontaktami do CSV, XLSX lub PDF.',
     canonicalPath: city.path,
-    h1: `Domy kultury, biblioteki i centra kultury — ${city.label}`,
+    h1: `Domy, ośrodki i centra kultury — ${city.label}`,
     leadHtml:
       `Baza obejmuje <strong>${total}</strong> instytucji kultury z siedzibą w miejscowości ${city.label} ` +
       `(województwo ${voi.label.toLowerCase()}).`,

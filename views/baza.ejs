@@ -13,7 +13,7 @@
           <span class="hero-eyebrow"><span class="dot"></span>Dla artystów, zespołów i animatorów kultury</span>
           <h1>Dotrzyj do instytucji kultury, które <span class="accent">szukają Twojej sztuki</span>.</h1>
           <p class="hero-lead">
-            Ponad <%= counts.totalRounded %> domów kultury, bibliotek i centrów kultury w jednej,
+            Ponad <%= counts.totalRounded %> domów, ośrodków i centrów kultury w jednej,
             uporządkowanej bazie. Filtruj po województwie, sprawdź dane kontaktowe
             i wyeksportuj gotową listę pod trasę koncertową, wystawę lub warsztaty.
           </p>
@@ -29,7 +29,8 @@
             <div class="stat"><div class="num"><%= dataUpdatedAt %></div><div class="lbl">ostatnia aktualizacja danych</div></div>
           </div>
           <p class="hero-note">
-            W tym <%= counts.billable %> z telefonem lub e-mailem i tylko za nie płacisz.
+            W każdym województwie od <%= counts.voiMin %> do <%= counts.voiMax %> instytucji, gminnych, miejskich,
+            powiatowych i wojewódzkich. W tym <%= counts.billable %> z telefonem lub e-mailem i tylko za nie płacisz.
             Typy instytucji nie sumują się do całości: kilka nazw pasuje do dwóch typów
             (np. „ośrodek kultury i dom kultury”), a ok. <%= counts.untypedPct %>% (galerie,
             fundacje, fora kultury) nie pasuje do żadnego z nich, ale też jest w bazie.
