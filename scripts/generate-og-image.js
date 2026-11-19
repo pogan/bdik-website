@@ -43,7 +43,7 @@ const svg = `
   <text x="80" y="365" font-family="Inter" font-weight="700" font-size="64" fill="#ffffff">Instytucji Kultury</text>
 
   <text x="80" y="440" font-family="Inter" font-weight="500" font-size="30" fill="#ffffff" opacity="0.92">
-    Kontakty do ${String(roundedTotal).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}+ domów kultury, bibliotek i centrów kultury
+    Kontakty do ${String(roundedTotal).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}+ domów, ośrodków i centrów kultury
   </text>
   <text x="80" y="482" font-family="Inter" font-weight="500" font-size="30" fill="#ffffff" opacity="0.92">
     w 16 województwach
