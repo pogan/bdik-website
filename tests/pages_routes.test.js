@@ -122,6 +122,10 @@ test('/baza: licznik z bazy, CTA, filtry kontaktu, próbka w hero, kolumny ekspo
   assert.equal(status, 200);
   assert.doesNotMatch(body, /2&nbsp;200\+/, 'liczba instytucji ma pochodzić z bazy');
   assert.match(body, /<div class="num">[\d\u00a0 ]*00\+<\/div>/, 'licznik zaokrąglony do setek ze znakiem +');
+  const { countInstitutions } = require('../lib/query');
+  const db = require('../db');
+  const rounded = Math.floor(countInstitutions(db) / 100) * 100;
+  if (rounded >= 1000) assert.match(body, /<div class="num">\d{1,3}(?:[\u00a0\u202f ]\d{3})+\+<\/div>/, 'tysiące oddzielone spacją (2 200+)');
   assert.match(body, /btn-hero-pulse[^>]*>.*Przeglądaj bazę/);
   assert.match(body, /value="both"/);
   assert.doesNotMatch(body, /<option value="website">/, 'filtr WWW ukryty w GUI');
@@ -159,4 +163,19 @@ test('formularz próbki komunikuje rabat jako "RABAT DO X zł" z cennika', async
     const { body } = await get(p);
     assert.ok(body.includes(label), `${p}: brak "${label}"`);
   }
+});
+
+test('/baza: sekcja opinii z istniejącymi zdjęciami', async () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const testimonials = require('../lib/testimonials').all();
+  const { body } = await get('/baza');
+  assert.match(body, /id="opinie"/);
+  for (const t of testimonials) {
+    assert.ok(body.includes(t.name), `brak opinii: ${t.name}`);
+    for (const size of [160, 320]) {
+      assert.ok(fs.existsSync(path.join(__dirname, '..', 'public', 'images', 'opinie', `${t.slug}-${size}.webp`)), `brak zdjęcia ${t.slug}-${size}`);
+    }
+  }
+  assert.doesNotMatch(body, /"@type":"Review"/, 'bez danych strukturalnych Review');
 });

@@ -29,6 +29,7 @@ const guides = require('../lib/guides');
 const { resolveLastmods } = require('../lib/sitemapLastmod');
 const { displayCase } = require('../lib/textCase');
 const { promoLabel } = require('../lib/promo');
+const testimonials = require('../lib/testimonials');
 const { FIELD_LABELS, EXPORT_FIELDS_FULL, EXPORT_FIELDS_PDF } = require('../lib/fieldLabels');
 
 const router = express.Router();
@@ -257,10 +258,13 @@ router.get('/baza', (req, res) => {
   res.render('baza', {
     cennik,
     promoLabel: promoLabel(),
+    testimonials: testimonials.all(),
     counts: {
       total: totalRows.toLocaleString('pl-PL'),
       // Licznik w hero: w dół do pełnej setki, ze znakiem "+" w widoku.
-      totalRounded: (Math.floor(totalRows / 100) * 100).toLocaleString('pl-PL'),
+      // useGrouping 'always': polski format domyślnie nie rozdziela tysięcy
+      // w liczbach czterocyfrowych ("2200"), a licznik ma wyglądać jak "2 200+".
+      totalRounded: (Math.floor(totalRows / 100) * 100).toLocaleString('pl-PL', { useGrouping: 'always' }),
       billable: billableRows.toLocaleString('pl-PL'),
       untypedPct: totalRows ? Math.round(((totalRows - typedRows) / totalRows) * 100) : 0,
     },
