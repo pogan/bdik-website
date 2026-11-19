@@ -179,3 +179,17 @@ test('/baza: sekcja opinii z istniejącymi zdjęciami', async () => {
   }
   assert.doesNotMatch(body, /"@type":"Review"/, 'bez danych strukturalnych Review');
 });
+
+test('/baza i /o-nas: sekcja „Kto stoi za BDIK” ze zdjęciem', async () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  for (const s of [160, 320, 640]) {
+    assert.ok(fs.existsSync(path.join(__dirname, '..', 'public', 'images', `karol-konop-${s}.webp`)));
+  }
+  const baza = await get('/baza');
+  assert.match(baza.body, /id="autor"/);
+  assert.match(baza.body, /Kto stoi za BDIK/);
+  const onas = await get('/o-nas');
+  assert.match(onas.body, /id="autor"/);
+  assert.match(onas.body, /"@type":"Person"/);
+});
