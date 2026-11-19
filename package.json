@@ -14,11 +14,11 @@
     "og-image": "node scripts/generate-og-image.js",
     "icons": "node scripts/generate-icons.js",
     "indexnow": "node scripts/indexnow.js",
-    "test": "node scripts/test-db.js && DB_PATH=data/test.sqlite node --test"
+    "test": "node scripts/prepare-test-db.js && DB_PATH=data/test.sqlite node --test"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
-    "better-sqlite3": "^11.10.0",
+    "better-sqlite3": "^12.11.1",
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
     "compression": "^1.7.5",
