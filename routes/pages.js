@@ -752,6 +752,15 @@ router.get('/o-nas', (req, res) => {
         url: canonicalUrl('/o-nas'),
         mainEntity: organizationSchema(),
       },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Person',
+        name: 'Karol Konop',
+        jobTitle: 'Menedżer artystyczny, inżynier informatyk',
+        image: canonicalUrl('/images/karol-konop-640.webp'),
+        url: canonicalUrl('/o-nas#autor'),
+        sameAs: ['https://www.linkedin.com/in/karolkonop/'],
+      },
     ],
   });
 });
