@@ -22,7 +22,7 @@ nie pisać do produkcyjnego `data/bdik.sqlite`.
 | `npm run og-image` | Buduje statyczny obraz Open Graph `public/images/og-cover.png` (1200×630). Napis z domeną bierze z `PUBLIC_BASE_URL` — uruchom z produkcyjnym env przed publikacją, inaczej pokaże „localhost". |
 | `npm run icons` | Buduje favicony rastrowe, `apple-touch-icon`, ikony PWA i `public/images/logo.png` (do `Organization` JSON-LD) z `public/favicon.svg`. Env-niezależne. Wynik commitowany. |
 | `npm run indexnow` | Zgłasza adresy treściowe do IndexNow (Bing/Yandex/Seznam). Dodaj `-- --dry-run`, żeby zobaczyć listę bez wysyłki. Uruchom po deployu zmieniającym strony; `npm run enrich` robi to samo automatycznie przy realnej zmianie danych w produkcji. Zob. `docs/seo-geo.md`. |
-| `npm test` | `node scripts/test-db.js && DB_PATH=data/test.sqlite node --test` — tworzy kopię bazy i uruchamia cały zestaw testów na kopii. Zob. sekcję 5. |
+| `npm test` | `node scripts/prepare-test-db.js && DB_PATH=data/test.sqlite node --test` — tworzy świeżą bazę z syntetycznymi danymi i uruchamia na niej cały zestaw testów. Zob. sekcję 5. |
 
 ---
 
@@ -181,27 +181,32 @@ Buduje `public/images/og-cover.png` (liczba instytucji zaokrąglona w dół do s
 domena z `PUBLIC_BASE_URL`). Bez argumentów. Uruchom z produkcyjnym env przed
 publikacją. Wymaga fontu Inter w systemie (inaczej dobierze najbliższy sans-serif).
 
-### `scripts/test-db.js` — kopia bazy dla testów
+### `scripts/prepare-test-db.js` — baza dla testów
 
 ```bash
-node scripts/test-db.js
+node scripts/prepare-test-db.js
 ```
 
-Tworzy `data/test.sqlite` jako kopię `data/bdik.sqlite` (przez API backupu
-SQLite — uwzględnia WAL) i wykonuje na niej migracje. Wywoływane automatycznie
-przez `npm test`; ręcznie potrzebne tylko przy uruchamianiu pojedynczych testów.
+Tworzy od zera `data/test.sqlite`: schemat, migracje i ok. 2 200 syntetycznych
+instytucji z `tests/support/syntheticDb.js` (REGON-y 99…, domena
+`example-fixture.pl`). Prawdziwa baza nie jest potrzebna. Wywoływane
+automatycznie przez `npm test`; ręcznie tylko przy pojedynczych testach.
 
 ---
 
 ## 5. Testy
 
 ```bash
-npm test                                              # wszystko (tworzy kopię bazy)
-node scripts/test-db.js && DB_PATH=data/test.sqlite node --test tests/pricing.test.js   # jeden plik
+npm test                                              # wszystko (tworzy bazę testową)
+node scripts/prepare-test-db.js && DB_PATH=data/test.sqlite node --test tests/pricing.test.js   # jeden plik
 DB_PATH=data/test.sqlite node --test tests/*.test.js  # jeśli data/test.sqlite już istnieje
 ```
 
-Testy wymagają istniejącego `data/bdik.sqlite` (źródło kopii). Uruchamiaj je
+Testy działają na danych syntetycznych, tak samo lokalnie i w CI (bez
+`CI_SKIP_TESTS`). Test, który potrzebuje konkretnego kształtu danych, dopisuje
+go w `tests/support/syntheticDb.js` albo wstawia rekordy w cofanej transakcji
+(wzór: `withFixtures` w `tests/contact_pricing.test.js`), nigdy nie zakłada
+zawartości prawdziwej bazy. Uruchamiaj je
 **zawsze** z `DB_PATH=data/test.sqlite` — inaczej tworzone w testach zamówienia
 i zdarzenia zaśmiecą produkcyjną bazę.
 
